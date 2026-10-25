@@ -1,0 +1,21 @@
+# Core dependencies
+torch>=2.2
+numpy>=1.24
+Pillow>=10.0
+PyYAML>=6.0
+scikit-image>=0.22
+tqdm>=4.66
+
+# Optional: video decoding (for KTH preprocessing)
+# opencv-python-headless>=4.9
+
+# Optional: quantum simulator
+# pennylane>=0.38
+
+# Optional: Streamlit dashboard
+# streamlit>=1.35
+# imageio>=2.34
+
+# Development / testing
+pytest>=8.0
+ruff>=0.5
