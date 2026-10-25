@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qpredrnn-research"
+version = "0.1.0"
+description = "Research scaffold for classical and quantum-enhanced recurrent video prediction"
+requires-python = ">=3.10"
+dependencies = [
+  "torch>=2.2",
+  "numpy>=1.24",
+  "Pillow>=10.0",
+  "PyYAML>=6.0",
+  "scikit-image>=0.22",
+  "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+quantum = ["pennylane>=0.38"]
+video = ["opencv-python-headless>=4.9"]
+dashboard = ["streamlit>=1.35", "imageio>=2.34"]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[tool.setuptools.packages.find]
+include = ["qpred*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+line-length = 100
