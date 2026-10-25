@@ -2,8 +2,6 @@
 
 A research starter repository for comparing a classical recurrent video-prediction baseline with a quantum-enhanced recurrent variant. It is designed for staged development in Antigravity and for running lightweight checks locally before any expensive training.
 
-> **Research honesty:** this starter is a compact, custom research scaffold, not a bit-for-bit reproduction of THUML PredRNN. The model currently included is a small ConvLSTM-style baseline plus an optional PennyLane quantum-context module. If you use the upstream `thuml/predrnn-pytorch` implementation or its checkpoint, preserve its license/attribution and document exactly which code and weights you reuse. Do not describe borrowed components as independently invented.
-
 ## What this repository does
 
 - Defines a reproducible video-frame dataset interface and preprocessing/manifest utilities.
