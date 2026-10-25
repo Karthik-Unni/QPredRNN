@@ -1,0 +1,25 @@
+seed: 7
+model:
+  name: classical
+  image_channels: 1
+  hidden_channels: 16
+  num_layers: 1
+  input_frames: 10
+  output_frames: 10
+  quantum:
+    enabled: false
+    n_qubits: 4
+    circuit_depth: 2
+training:
+  epochs: 1
+  batch_size: 2
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  num_workers: 0
+  max_train_batches: 2
+  max_val_batches: 1
+data:
+  image_size: 64
+  input_frames: 10
+  output_frames: 10
+  stride: 2
