@@ -19,24 +19,6 @@ A research starter repository for comparing a classical recurrent video-predicti
 - Main metrics: MSE, MAE, PSNR, SSIM. LPIPS is not included by default because common implementations use pretrained feature networks.
 - The quantum branch is a research hypothesis, not a guarantee of improvement or quantum advantage. A simulator runs on classical hardware.
 
-## Quick start (CPU smoke test)
-
-```bash
-python -m venv .venv
-# Windows PowerShell:
-.venv\Scripts\Activate.ps1
-# macOS/Linux:
-# source .venv/bin/activate
-
-python -m pip install --upgrade pip
-pip install -e ".[dev]"
-python scripts/make_toy_dataset.py --out data/toy --sequences 24 --frames 20 --size 64
-python scripts/check_data.py --root data/toy --split-file data/toy/splits.json
-pytest -q
-python -m qpred.train --config configs/smoke.yaml --data-root data/toy --run-dir runs/smoke --device cpu
-```
-
-The smoke run verifies code paths only. It is **not** a meaningful performance result.
 
 ## Project phases
 
