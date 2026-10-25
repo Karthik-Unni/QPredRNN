@@ -34,8 +34,26 @@ Do not upload raw KTH or processed frames to GitHub unless the dataset license e
 - Input and prediction lengths.
 - Any augmentation, applied consistently across all frames in a clip.
 
-## KTH caution
-Filename patterns differ across mirrors/archives. Never trust an automatic subject parser without reviewing its output. The helper split function is an example only, not an authoritative guarantee for every archive. If a subject cannot be mapped, stop and manually resolve it.
+## KTH Sequence Boundaries and Known Missing Video
+
+### 1. Sequence Boundaries (`00sequences.txt`)
+Each raw KTH `.avi` video consists of 4 separate takes/performances separated by camera cuts or static pauses.
+- The official `00sequences.txt` file specifies 1-based inclusive frame ranges for each valid take (e.g., `frames 1-95, 96-185, 186-245, 246-360`).
+- The preprocessing pipeline converts each annotated take into an independent sequence directory (e.g. `person01_boxing_d1_take01/`).
+- This guarantees that temporal sliding windows (`input_frames` + `output_frames`) strictly stay inside an active performance and never cross camera cuts.
+
+### 2. Known Missing Video: `person13_handclapping_d3`
+- Official KTH distributions omit `person13_handclapping_d3_uncomp.avi`.
+- This is officially marked as `*missing*` in `00sequences.txt`.
+- There are **599 available AVI files** (out of 600 combinations) on disk, generating **2,391 annotated takes**.
+- The pipeline acknowledges this missing file and never fabricates synthetic frames for it.
+
+### 3. Subject-Disjoint 3-Way Split Protocol
+- **Train:** Subjects 1–8 (768 takes)
+- **Validation:** Subjects 9–16 (760 takes)
+- **Test:** Subjects 17–25 (863 takes)
+- **Total:** 2,391 takes.
+- *Comparison with literature:* The original paper (Schuldt et al., 2004) and common video benchmarks (Srivastava et al., 2015) used a 16-train / 9-test split without a partitioned validation set. We use a strictly disjoint 8/8/9 split to ensure early stopping and model selection are conducted on validation data without test-set leakage. All reported metrics should be compared against models trained on this exact partition.
 
 
 ## Raw-video preprocessing commands
