@@ -34,11 +34,11 @@ pip install -e ".[quantum]"
 ```bash
 python scripts/make_toy_dataset.py --out data/toy --sequences 24 --frames 20 --size 64
 python scripts/check_data.py --root data/toy
-pytest -q
+pytest -v
 python -m qpred.train --config configs/smoke.yaml --data-root data/toy --run-dir runs/smoke --device cpu
 ```
 
-These commands use synthetic moving-square data and a tiny model. They prove the software path runs, not that it predicts real videos well.
+These commands use synthetic moving-square data and the compact `VideoConvLSTM` baseline model (`qpred/models/convlstm.py`, `qpred/train.py`). They prove the software path runs, backpropagation updates weights, and checkpoints save/reload cleanly, not that it predicts real videos well.
 
 ## KTH preprocessing (after manual review of manifest)
 ```bash
