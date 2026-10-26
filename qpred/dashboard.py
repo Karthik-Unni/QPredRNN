@@ -513,27 +513,49 @@ with tab_compare:
     st.markdown("### ⚖️ Side-by-Side Model Architecture Comparison")
     st.markdown("Compare predictions and metrics across ConvLSTM, PredRNN-V2, and QPredRNN.")
 
-    st.warning(
-        "⚠️ **METHODOLOGICAL AUDIT: NON-COMPARABLE TRAINING PROTOCOLS**\n\n"
-        "The current default checkpoints in `runs/` were saved under fundamentally different training budgets:\n"
-        "- **ConvLSTM Baseline**: Epoch 1 (pilot exploration)\n"
-        "- **PredRNN-V2**: Epoch 10 (~5,000 optimization steps, overnight run)\n"
-        "- **QPredRNN**: Epoch 1 smoke test (exactly 1 batch / 1 optimization step)\n\n"
-        "**Direct performance comparison between these checkpoints is not scientifically valid.** "
-        "The high error in QPredRNN is caused by undertraining (unadapted Sigmoid readout weights producing uniform ~0.50 mid-grey frames), "
-        "not an architectural flaw in quantum recurrence. All models must be evaluated under matched step/epoch budgets before drawing research conclusions."
+    suite_choice = st.radio(
+        "Benchmark Comparison Suite",
+        [
+            "TPU v5e-1 50-Epoch Benchmark (Final)",
+            "Local GPU Pilot (10-Epoch Pilot vs Baselines)",
+            "Custom Checkpoint Paths",
+        ],
+        horizontal=True,
     )
+
+    if suite_choice == "TPU v5e-1 50-Epoch Benchmark (Final)":
+        default_m1 = "runs/kth_classical_tpu_50ep/checkpoint_best.pt"
+        default_m2 = "runs/kth_predrnn_v2_tpu_50ep/checkpoint_best.pt"
+        default_m3 = "runs/kth_qpredrnn_tpu_50ep/checkpoint_best.pt"
+        st.info(
+            "🚀 **TPU v5e-1 50-Epoch Final Benchmark**: Compares ConvLSTM, PredRNN-V2, and QPredRNN "
+            "trained sequentially under matched 50-epoch budgets on Google Colab TPU v5e-1. "
+            "Import completed runs with `python scripts/import_colab_results.py --source-dir <colab_dir>`."
+        )
+    elif suite_choice == "Local GPU Pilot (10-Epoch Pilot vs Baselines)":
+        default_m1 = "runs/kth_classical_gpu/checkpoint_best.pt"
+        default_m2 = "runs/kth_predrnn_v2_overnight_gpu/checkpoint_best.pt"
+        default_m3 = "runs/kth_qpredrnn_pilot_gpu/checkpoint_best.pt"
+        st.warning(
+            "⚠️ **LOCAL PILOT BUDGET NOTE**: ConvLSTM was trained for only 1 epoch (100 steps). "
+            "PredRNN-V2 and QPredRNN share matched 10-epoch pilot budgets (~5,000 steps). "
+            "ConvLSTM's lower MSE in static scenes reflects initialization scale, not superior temporal modeling."
+        )
+    else:
+        default_m1 = "runs/kth_classical_tpu_50ep/checkpoint_best.pt"
+        default_m2 = "runs/kth_predrnn_v2_tpu_50ep/checkpoint_best.pt"
+        default_m3 = "runs/kth_qpredrnn_tpu_50ep/checkpoint_best.pt"
 
     col_m1, col_m2, col_m3 = st.columns(3)
     with col_m1:
         st.markdown("**Model 1: ConvLSTM Baseline**")
-        ckpt_m1 = st.text_input("ConvLSTM Checkpoint", value="runs/kth_classical_gpu/checkpoint_best.pt")
+        ckpt_m1 = st.text_input("ConvLSTM Checkpoint", value=default_m1)
     with col_m2:
         st.markdown("**Model 2: PredRNN-V2**")
-        ckpt_m2 = st.text_input("PredRNN-V2 Checkpoint", value="runs/kth_predrnn_v2_overnight_gpu/checkpoint_best.pt")
+        ckpt_m2 = st.text_input("PredRNN-V2 Checkpoint", value=default_m2)
     with col_m3:
         st.markdown("**Model 3: QPredRNN**")
-        ckpt_m3 = st.text_input("QPredRNN Checkpoint", value="runs/kth_qpredrnn_smoke_gpu/checkpoint_best.pt")
+        ckpt_m3 = st.text_input("QPredRNN Checkpoint", value=default_m3)
 
     if st.button("Run Multi-Model Comparative Evaluation", type="secondary"):
         models_to_test = [
@@ -546,20 +568,27 @@ with tab_compare:
         comp_results = []
 
         for name, ckpt_p in models_to_test:
-            if Path(ckpt_p).exists():
+            ckpt_path_obj = Path(ckpt_p)
+            if ckpt_path_obj.exists():
                 try:
                     m, ck = load_checkpoint_model(ckpt_p, chosen_device)
-                    cfg_mod = ck.get("config", {}).get("model", {})
+                    cfg = ck.get("config", {})
+                    cfg_mod = cfg.get("model", {})
                     mod_arch = cfg_mod.get("name", name)
+                    target_ep = cfg.get("training", {}).get("epochs")
                     saved_ep = ck.get("epoch", "N/A")
                     saved_st = ck.get("global_step", "N/A")
 
                     if isinstance(saved_st, int) and saved_st <= 10:
                         train_status = f"⚠️ Smoke Test ({saved_st} step{'s' if saved_st != 1 else ''})"
-                    elif isinstance(saved_ep, int) and saved_ep == 1:
-                        train_status = "Pilot Run (1 epoch)"
+                    elif isinstance(saved_ep, int) and target_ep is not None and saved_ep < target_ep:
+                        train_status = f"⚠️ Incomplete ({saved_ep}/{target_ep} ep, {saved_st} steps)"
+                    elif isinstance(saved_ep, int) and saved_ep >= 50:
+                        train_status = f"Completed 50ep ({saved_ep} ep, {saved_st} steps)"
                     elif isinstance(saved_ep, int) and saved_ep >= 10:
-                        train_status = f"Trained ({saved_ep} ep, {saved_st} steps)"
+                        train_status = f"Pilot ({saved_ep} ep, {saved_st} steps)"
+                    elif isinstance(saved_ep, int) and saved_ep == 1:
+                        train_status = "Smoke / 1-Epoch"
                     else:
                         train_status = f"Checkpoint (ep {saved_ep})"
 
@@ -581,6 +610,7 @@ with tab_compare:
                         "SSIM": met["ssim"] if HAS_SKIMAGE else "N/A",
                         "Latency (ms)": lat,
                         "Predictions": preds,
+                        "per_frame": met["per_frame"],
                     })
                 except Exception as e:
                     comp_results.append({
@@ -593,10 +623,16 @@ with tab_compare:
                         "MSE": None,
                     })
             else:
+                is_tpu_path = "tpu_50ep" in ckpt_p
+                status_msg = (
+                    "Awaiting Colab TPU Import"
+                    if is_tpu_path
+                    else "Checkpoint Missing"
+                )
                 comp_results.append({
                     "Model": name,
                     "Architecture": "N/A",
-                    "Training Status": "Checkpoint Missing",
+                    "Training Status": status_msg,
                     "Epoch": "N/A",
                     "Global Steps": "N/A",
                     "Checkpoint Path": ckpt_p,
@@ -633,6 +669,36 @@ with tab_compare:
             if "Predictions" in r:
                 strip = tensor_to_pil_strip(r["Predictions"], title=f"{r['Model']} [{r.get('Training Status', '')}] Output Strip")
                 st.image(strip, caption=f"{r['Model']} ({r.get('Architecture', '')}) Rollout", use_container_width=True)
+
+        valid_models = [r for r in comp_results if "per_frame" in r]
+        if valid_models:
+            st.markdown("#### Comparative Degradation Across Prediction Horizon")
+            fig_comp, (ax_mse, ax_ssim) = plt.subplots(1, 2, figsize=(10, 3.5), facecolor="#1e222d")
+            for ax in (ax_mse, ax_ssim):
+                ax.set_facecolor("#1e222d")
+                ax.tick_params(colors="white")
+                ax.grid(color="#334155", linestyle="--", alpha=0.5)
+                for spine in ax.spines.values():
+                    spine.set_color("#475569")
+
+            color_map = {"ConvLSTM": "#3b82f6", "PredRNN-V2": "#10b981", "QPredRNN": "#c084fc"}
+            default_colors = ["#3b82f6", "#10b981", "#c084fc", "#f59e0b"]
+            for idx, r in enumerate(valid_models):
+                c = color_map.get(r["Model"], default_colors[idx % len(default_colors)])
+                horizons = list(range(1, len(r["per_frame"]["mse"]) + 1))
+                ax_mse.plot(horizons, r["per_frame"]["mse"], marker="o", label=r["Model"], color=c)
+                if HAS_SKIMAGE and "ssim" in r["per_frame"]:
+                    ax_ssim.plot(horizons, r["per_frame"]["ssim"], marker="^", label=r["Model"], color=c)
+
+            ax_mse.set_title("MSE vs Horizon (Lower = Better)", color="white")
+            ax_mse.set_xlabel("Horizon Step (t)", color="white")
+            ax_mse.legend(facecolor="#1e222d", edgecolor="#334155", labelcolor="white")
+
+            ax_ssim.set_title("SSIM vs Horizon (Higher = Better)", color="white")
+            ax_ssim.set_xlabel("Horizon Step (t)", color="white")
+            ax_ssim.legend(facecolor="#1e222d", edgecolor="#334155", labelcolor="white")
+
+            st.pyplot(fig_comp)
 
 
 # ------------------------------------------------------------------------------
