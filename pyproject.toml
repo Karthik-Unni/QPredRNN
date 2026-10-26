@@ -19,8 +19,16 @@ dependencies = [
 [project.optional-dependencies]
 quantum = ["pennylane>=0.38"]
 video = ["opencv-python-headless>=4.9"]
-dashboard = ["streamlit>=1.35", "imageio>=2.34"]
+dashboard = ["streamlit>=1.35", "imageio>=2.34", "matplotlib>=3.8"]
 dev = ["pytest>=8.0", "ruff>=0.5"]
+all = [
+  "pennylane>=0.38",
+  "streamlit>=1.35",
+  "imageio>=2.34",
+  "matplotlib>=3.8",
+  "pytest>=8.0",
+  "ruff>=0.5",
+]
 
 [tool.setuptools.packages.find]
 include = ["qpred*"]

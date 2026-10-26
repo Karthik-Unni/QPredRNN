@@ -6,16 +6,17 @@ PyYAML>=6.0
 scikit-image>=0.22
 tqdm>=4.66
 
-# Optional: video decoding (for KTH preprocessing)
+# Optional: video decoding (only needed for raw AVI preprocessing)
 # opencv-python-headless>=4.9
 
-# Optional: quantum simulator
-# pennylane>=0.38
+# Quantum simulation
+pennylane>=0.38
 
-# Optional: Streamlit dashboard
-# streamlit>=1.35
-# imageio>=2.34
+# Research dashboard & visualization
+streamlit>=1.35
+imageio>=2.34
+matplotlib>=3.8
 
-# Development / testing
+# Development & testing
 pytest>=8.0
 ruff>=0.5

@@ -1,0 +1,35 @@
+seed: 7
+data_root: data/processed/kth64
+run_dir: runs/kth_qpredrnn_profile_gpu
+model:
+  name: qpredrnn
+  image_channels: 1
+  hidden_channels: 8
+  num_layers: 2
+  input_frames: 10
+  output_frames: 10
+  kernel_size: 3
+  decouple_loss_weight: 0.1
+  quantum:
+    enabled: true
+    n_qubits: 4
+    circuit_depth: 2
+    backend: default.qubit
+training:
+  epochs: 1
+  batch_size: 1
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  num_workers: 0
+  max_train_batches: 100
+  max_val_batches: 20
+  reverse_scheduled_sampling:
+    enabled: true
+    r_sampling_step_1: 500
+    r_sampling_step_2: 4500
+    r_exp_alpha: 5.0
+data:
+  image_size: 64
+  input_frames: 10
+  output_frames: 10
+  stride: 2

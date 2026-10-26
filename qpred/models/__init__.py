@@ -8,6 +8,11 @@ from .predrnn_v2 import (
     reserve_schedule_sampling_exp,
     generate_scheduled_sampling_masks,
 )
+from .qpredrnn import (
+    QPredRNN,
+    QuantumContextModulator,
+    QuantumContextModel,
+)
 
 
 def build_model(config: dict) -> nn.Module:
@@ -34,6 +39,18 @@ def build_model(config: dict) -> nn.Module:
             kernel_size=model_cfg.get("kernel_size", 3),
             decouple_loss_weight=model_cfg.get("decouple_loss_weight", 0.1),
         )
+    elif name in ("qpredrnn", "quantum_context"):
+        q_cfg = model_cfg.get("quantum", {})
+        return QPredRNN(
+            image_channels=model_cfg.get("image_channels", 1),
+            hidden_channels=model_cfg.get("hidden_channels", 32),
+            input_frames=model_cfg.get("input_frames", 10),
+            output_frames=model_cfg.get("output_frames", 10),
+            num_layers=model_cfg.get("num_layers", 2),
+            kernel_size=model_cfg.get("kernel_size", 3),
+            decouple_loss_weight=model_cfg.get("decouple_loss_weight", 0.1),
+            quantum_cfg=q_cfg,
+        )
 
     raise ValueError(f"Unknown or unsupported model name: {name}")
 
@@ -41,6 +58,9 @@ def build_model(config: dict) -> nn.Module:
 __all__ = [
     "VideoConvLSTM",
     "PredRNNV2",
+    "QPredRNN",
+    "QuantumContextModulator",
+    "QuantumContextModel",
     "SpatioTemporalLSTMCell",
     "compute_memory_decoupling_loss",
     "reserve_schedule_sampling_exp",

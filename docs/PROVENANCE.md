@@ -24,7 +24,15 @@ Fill this out before publishing or presenting results.
     2. Operates on standard PyTorch `(B, T, C, H, W)` batch-first layout instead of upstream legacy `(T, B, C, H, W)`.
     3. Uses pure PyTorch operations compatible with Python 3.11 and PyTorch 2.x without deprecated dependencies (`scipy.misc`, `Variable`, legacy CUDA extensions).
     4. Standalone modular loss and reverse scheduled sampling integrated into clean training loop.
-- Quantum-context prototype in `qpred/models/quantum_context.py`: optional research branch using PennyLane's default.qubit simulator.
+- Quantum-enhanced architecture in `qpred/models/qpredrnn.py` (`QPredRNN`):
+  - Architecture: Parameterized Quantum Circuit (PQC) layer integrated with SpatioTemporal LSTM cells.
+  - VQC implementation: PennyLane `default.qubit` simulator with `qml.qnn.TorchLayer`.
+  - Feature encoding: Spatial adaptive pooling followed by AngleEmbedding ($RY$ rotations).
+  - Variational circuit: BasicEntanglerLayers ($RX$ rotations and closed CNOT ring) across depth $D$.
+  - Measurement: Pauli-$Z$ observable expectation values $\langle Z_i \rangle$ mapped to modulate spatiotemporal memory $M_t$.
+  - Execution nature: Fully differentiable classical simulation via PennyLane; no physical quantum hardware is claimed.
+- Dashboard application in `qpred/dashboard.py` and `scripts/run_dashboard.py`:
+  - Interactive Streamlit dashboard for evaluating models, visual strips, error heatmaps, quantitative metrics, and report export.
 - Data and training scaffold: project-specific.
 - Pretrained weights: none included by default.
 - Trained results: none included by default.

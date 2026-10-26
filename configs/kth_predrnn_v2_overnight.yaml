@@ -1,0 +1,28 @@
+seed: 7
+model:
+  name: predrnn_v2
+  image_channels: 1
+  hidden_channels: 8
+  num_layers: 2
+  input_frames: 10
+  output_frames: 10
+  kernel_size: 3
+  decouple_loss_weight: 0.1
+training:
+  epochs: 10
+  batch_size: 1
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  num_workers: 0
+  max_train_batches: 500
+  max_val_batches: 100
+  reverse_scheduled_sampling:
+    enabled: true
+    r_sampling_step_1: 500
+    r_sampling_step_2: 4500
+    r_exp_alpha: 5.0
+data:
+  image_size: 64
+  input_frames: 10
+  output_frames: 10
+  stride: 2

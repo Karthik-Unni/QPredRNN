@@ -36,9 +36,12 @@ python scripts/make_toy_dataset.py --out data/toy --sequences 24 --frames 20 --s
 python scripts/check_data.py --root data/toy
 pytest -v
 python -m qpred.train --config configs/smoke.yaml --data-root data/toy --run-dir runs/smoke --device cpu
+python -m qpred.train --config configs/kth_predrnn_v2_smoke.yaml --data-root data/processed/kth64 --run-dir runs/kth_predrnn_v2_smoke --device cuda
+python -m qpred.train --config configs/kth_qpredrnn_smoke.yaml --data-root data/processed/kth64 --run-dir runs/kth_qpredrnn_smoke_gpu --device cuda
+python scripts/run_dashboard.py
 ```
 
-These commands use synthetic moving-square data and the compact `VideoConvLSTM` baseline model (`qpred/models/convlstm.py`, `qpred/train.py`). They prove the software path runs, backpropagation updates weights, and checkpoints save/reload cleanly, not that it predicts real videos well.
+These commands use synthetic moving-square data and verify all three models: `VideoConvLSTM` baseline (`qpred/models/convlstm.py`), genuine `PredRNNV2` (`qpred/models/predrnn_v2.py`), and the quantum-enhanced `QPredRNN` (`qpred/models/qpredrnn.py`). They prove the software paths run, backpropagation updates weights, and checkpoints save/reload cleanly on both CPU and CUDA GPU. The dashboard provides an interactive UI for evaluating models, visual strips, error heatmaps, and metric comparisons.
 
 ## KTH preprocessing (after manual review of manifest)
 ```bash
