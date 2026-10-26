@@ -1,0 +1,49 @@
+﻿# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+qpred-gpu/
+
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Training outputs and model checkpoints
+runs/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+
+# Local datasets and archives
+data/raw/
+data/external/
+data/processed/
+data/manifest.json
+QPredRNN_data.zip
+QPredRNN_code.zip
+*.zip
+*.avi
+*.mp4
+
+# Logs and runtime metrics
+*.log
+wandb/
+mlruns/
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,4 +1,4 @@
-# QPredRNN: Quantum-Enhanced Spatiotemporal Video Prediction
+﻿# QPredRNN: Quantum-Enhanced Spatiotemporal Video Prediction
 
 A research framework for evaluating and comparing classical recurrent video prediction baselines (`ConvLSTM`, `PredRNN-V2`) with a quantum-enhanced recurrent model (`QPredRNN`).
 

@@ -1,6 +1,6 @@
-# Collaborative GPU Training Guide
+﻿# Collaborative GPU Training Guide
 
-**Branch**: `collab/gpu-training`
+**Branch**: `main`
 **Repository**: `https://github.com/Karthik-Unni/QPredRNN.git`
 **Target Environment**: Linux or Windows workstation with high-performance NVIDIA GPU (e.g., RTX 3080/3090/4090, A100, H100)
 
@@ -8,14 +8,14 @@ This guide provides instructions for training all three spatiotemporal video pre
 
 ---
 
-## 1. Clone the `collab/gpu-training` Branch
+## 1. Clone the `main` Branch
 
-Clone the repository and switch to the `collab/gpu-training` branch:
+Clone the repository and switch to the `main` branch:
 
 ```bash
 git clone https://github.com/Karthik-Unni/QPredRNN.git
 cd QPredRNN
-git checkout collab/gpu-training
+git checkout main
 ```
 
 > [!NOTE]
@@ -85,15 +85,15 @@ Due to size limits, preprocessed video sequences are shared separately via Googl
 ### Expected Layout After Extraction:
 ```
 QPredRNN/
-└── data/
-    ├── manifest.json
-    ├── toy/
-    └── processed/
-        └── kth64/
-            ├── splits.json
-            └── sequences/
-                ├── person01_boxing_d1_take01/
-                └── ... (2,391 annotated sequence takes)
+â””â”€â”€ data/
+    â”œâ”€â”€ manifest.json
+    â”œâ”€â”€ toy/
+    â””â”€â”€ processed/
+        â””â”€â”€ kth64/
+            â”œâ”€â”€ splits.json
+            â””â”€â”€ sequences/
+                â”œâ”€â”€ person01_boxing_d1_take01/
+                â””â”€â”€ ... (2,391 annotated sequence takes)
 ```
 
 ### Verification:
@@ -130,7 +130,7 @@ python -m qpred.train --config configs/kth_qpredrnn_smoke.yaml --device cuda
 Each model has its own configuration file and isolated run directory in `runs/`. Keep them separated so histories and checkpoints remain isolated for the dashboard comparison.
 
 ### Model 1: ConvLSTM Baseline (Spatial-Temporal LSTM)
-- **Architecture**: 2-layer ConvLSTM (32 hidden channels, kernel 3×3).
+- **Architecture**: 2-layer ConvLSTM (32 hidden channels, kernel 3Ã—3).
 - **Configuration**: `configs/kth_classical.yaml` (50 epochs) or `configs/kth_classical_pilot.yaml` (pilot).
 - **Execution Command**:
   ```bash

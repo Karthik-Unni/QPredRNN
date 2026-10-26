@@ -1,7 +1,7 @@
-# Collaborator Onboarding & Development Guide
+﻿# Collaborator Onboarding & Development Guide
 
 **Repository**: `https://github.com/Karthik-Unni/QPredRNN.git`
-**Collaboration Branch**: `collab/project-completion`
+**Collaboration Branch**: `main`
 **Date**: October 26, 2026
 
 Welcome to the **QPredRNN** research project. This guide outlines how to configure your local development environment, restore the preprocessed KTH dataset, launch the research dashboard, and contribute code safely in parallel with ongoing GPU training runs.
@@ -18,7 +18,7 @@ git clone https://github.com/Karthik-Unni/QPredRNN.git
 cd QPredRNN
 
 # [TESTED] Check out the collaboration branch
-git checkout collab/project-completion
+git checkout main
 ```
 
 ---
@@ -69,15 +69,15 @@ Due to GitHub size limits, preprocessed video sequences are shared via Google Dr
 ### Expected Directory Layout:
 ```
 QPredRNN/
-├── data/
-│   ├── manifest.json
-│   ├── toy/
-│   └── processed/
-│       └── kth64/
-│           ├── splits.json
-│           └── sequences/
-│               ├── person01_boxing_d1_take01/
-│               └── ... (2,391 annotated sequence takes)
+â”œâ”€â”€ data/
+â”‚   â”œâ”€â”€ manifest.json
+â”‚   â”œâ”€â”€ toy/
+â”‚   â””â”€â”€ processed/
+â”‚       â””â”€â”€ kth64/
+â”‚           â”œâ”€â”€ splits.json
+â”‚           â””â”€â”€ sequences/
+â”‚               â”œâ”€â”€ person01_boxing_d1_take01/
+â”‚               â””â”€â”€ ... (2,391 annotated sequence takes)
 ```
 
 ### Extraction Steps:
@@ -138,11 +138,11 @@ Access the dashboard at `http://localhost:8501`.
 To ensure smooth collaboration while model training runs locally:
 
 ### A. Create a Feature Branch
-Always branch off `collab/project-completion`:
+Always branch off `main`:
 ```powershell
 # [STANDARD] Create your personal feature branch
-git checkout collab/project-completion
-git pull origin collab/project-completion
+git checkout main
+git pull origin main
 git checkout -b feature/your-feature-name
 ```
 
@@ -162,7 +162,7 @@ git commit -m "feat(analysis): add metric visualization helper"
 # [STANDARD] Push feature branch to GitHub
 git push -u origin feature/your-feature-name
 ```
-Then open a Pull Request targeting `collab/project-completion` on GitHub for review.
+Then open a Pull Request targeting `main` on GitHub for review.
 
 ---
 
@@ -176,4 +176,4 @@ To prevent data corruption, race conditions, and merge conflicts during parallel
 > 2. **Baseline Checkpoints**: `runs/kth_classical_gpu/` and `runs/kth_predrnn_v2_overnight_gpu/` contain benchmark checkpoints. Keep them read-only.
 > 3. **Dataset Files**: Never stage or commit anything inside `data/` or any `*.zip` files.
 > 4. **Virtual Environment**: Never commit `.venv/`, `venv/`, or `.env`.
-> 5. **Git Branches**: Never force-push (`--force`) to `main` or `collab/project-completion`.
+> 5. **Git Branches**: Never force-push (`--force`) to `main` or `main`.
