@@ -82,3 +82,11 @@ Covers:
 - Checkpoint resume continuation, optimizer restoration, and config validation (`test_resume.py`)
 - QPredRNN quantum VQC gradients, inference leakage isolation, and training (`test_qpredrnn.py`)
 - Sequence metrics: MSE, MAE, PSNR, SSIM (`test_metrics.py`)
+
+---
+
+## 5. Collaborative GPU Training & Setup Guides
+
+- **GPU Training Guide**: See [`docs/GPU_TRAINING_GUIDE.md`](docs/GPU_TRAINING_GUIDE.md) for full instructions on training ConvLSTM, PredRNN-V2, and QPredRNN on a dedicated GPU machine.
+- **Collaborator Setup**: See [`docs/COLLABORATOR_SETUP.md`](docs/COLLABORATOR_SETUP.md) for step-by-step virtual environment creation and dataset restoration.
+- **Environment Specifications**: See [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) for verified local stack versions and dependency declarations.
