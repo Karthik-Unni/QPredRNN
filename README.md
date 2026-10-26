@@ -1,4 +1,4 @@
-﻿# QPredRNN: Quantum-Enhanced Spatiotemporal Video Prediction
+# QPredRNN: Quantum-Enhanced Spatiotemporal Video Prediction
 
 A research framework for evaluating and comparing classical recurrent video prediction baselines (`ConvLSTM`, `PredRNN-V2`) with a quantum-enhanced recurrent model (`QPredRNN`).
 
@@ -35,13 +35,15 @@ python scripts/run_dashboard.py
 streamlit run qpred/dashboard.py
 ```
 
-### Dashboard Capabilities:
-- **Model & Checkpoint Loader**: Select `ConvLSTM`, `PredRNN-V2`, or `QPredRNN`, inspect parameters, saved epochs, best validation losses, and quantum circuit configuration.
-- **Visual Rollout**: Side-by-side observed context frames ($t=1\dots 10$), model predictions ($t=11\dots 20$), ground truth targets, and absolute error heatmaps.
-- **Quantitative Metrics**: Real-time MSE, MAE, PSNR (dB), SSIM, inference latency (ms), and per-horizon degradation curves.
-- **Multi-Model Comparison**: Compare all three models side-by-side on the exact same sequence.
-- **Training Curves**: Plot training and validation loss convergence across multiple experiment runs.
-- **Report Export**: Download Markdown summaries and evaluation records.
+### Dashboard Features (Premium Edition):
+- **Animated Hero Header** with glassmorphism design system — Inter/JetBrains Mono typography.
+- **Live Training Monitor** in the sidebar — reads `history.json` and shows an animated progress bar for any run active in the last 20 minutes.
+- **Quantum Circuit Info Card** — VQC configuration (qubits, depth, backend, embedding, entangler, measurement).
+- **Glassmorphism Metric Tiles** with delta comparison vs persistence baseline (↓ green = model beats baseline).
+- **Visual Rollout** — observed context frames, model predictions, ground truth targets, and magma absolute error heatmaps.
+- **Multi-Model Comparison** — styled results table with best-MSE green highlight and per-horizon SSIM/MSE degradation curves.
+- **Training Curves** — log-scale toggle, best-epoch vertical markers, run summary table.
+- **Report & Export** — timestamped Markdown download with quantum circuit configuration section and a full runs inventory table.
 
 ---
 
@@ -71,7 +73,7 @@ python -m qpred.train --config configs/kth_predrnn_v2_20ep.yaml --data-root data
 
 ## 4. Test Suite
 
-Run full automated tests (43 unit tests):
+Run full automated tests (54 unit tests):
 ```bash
 python -m pytest -q
 ```
@@ -82,6 +84,9 @@ Covers:
 - Checkpoint resume continuation, optimizer restoration, and config validation (`test_resume.py`)
 - QPredRNN quantum VQC gradients, inference leakage isolation, and training (`test_qpredrnn.py`)
 - Sequence metrics: MSE, MAE, PSNR, SSIM (`test_metrics.py`)
+- Evaluation pipeline: `evaluate_windows`, persistence/mean-context baselines (`test_evaluate.py`)
+- Colab TPU results import, verification, and checksums (`test_import_colab_results.py`)
+- Training history parsing and run scanning (`test_training.py`)
 
 ---
 

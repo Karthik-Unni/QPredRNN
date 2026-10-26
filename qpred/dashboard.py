@@ -1,4 +1,7 @@
-"""QPredRNN Research Dashboard: Interactive Evaluation, Visualization & Experiment Analysis.
+"""QPredRNN Research Dashboard — Premium Edition.
+
+Interactive evaluation, visualisation & experiment analysis for classical and
+quantum-enhanced spatiotemporal video prediction.
 
 Run with:
     streamlit run qpred/dashboard.py
@@ -21,22 +24,144 @@ from qpred.metrics import compute_sequence_metrics, HAS_SKIMAGE
 from qpred.models import build_model, QPredRNN, PredRNNV2, VideoConvLSTM
 
 st.set_page_config(
-    page_title="QPredRNN Research Dashboard",
+    page_title="QPredRNN · Research Dashboard",
     page_icon="⚛️",
     layout="wide",
     initial_sidebar_state="expanded",
+    menu_items={
+        "Get Help": "https://github.com/RijinRajeevan/QPredRNN",
+        "Report a bug": "https://github.com/RijinRajeevan/QPredRNN/issues",
+        "About": "QPredRNN — Quantum-Enhanced Spatiotemporal Video Prediction Research Dashboard",
+    },
 )
 
-# Custom Styling for clean, modern scientific UI
+# ─── Premium Global CSS ────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    .reportview-container { background: #0e1117; }
-    .main-header { font-size: 2.2rem; font-weight: 700; color: #4F8BF9; margin-bottom: 0.2rem; }
-    .sub-header { font-size: 1.05rem; color: #8892b0; margin-bottom: 1.5rem; }
-    .status-badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600; }
-    .badge-quantum { background: rgba(138, 43, 226, 0.2); color: #c084fc; border: 1px solid rgba(138, 43, 226, 0.4); }
-    .badge-classical { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
-    .metric-card { background: #1e222d; border-radius: 8px; padding: 1rem; border: 1px solid #2d3748; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
+.stApp { background: #08090f; }
+.main .block-container { padding: 1.5rem 2rem 3rem 2rem; max-width: 1400px; }
+
+/* Animated Gradient Hero */
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.qpred-hero {
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e, #0a0a2e, #1a0533, #0f0c29);
+  background-size: 400% 400%;
+  animation: gradientShift 12s ease infinite;
+  border-radius: 16px;
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  box-shadow: 0 0 60px rgba(139, 92, 246, 0.12), 0 4px 32px rgba(0,0,0,0.6);
+  position: relative; overflow: hidden;
+}
+.qpred-hero::before {
+  content: ''; position: absolute; top: -40%; left: -20%;
+  width: 60%; height: 200%;
+  background: radial-gradient(ellipse, rgba(139,92,246,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-title {
+  font-size: 2.8rem; font-weight: 800; letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #e2d9f3 0%, #a78bfa 40%, #60a5fa 70%, #c4b5fd 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  margin: 0 0 0.35rem 0; line-height: 1.1;
+}
+.hero-sub { font-size: 1.05rem; color: #9ca3af; margin: 0 0 1.2rem 0; line-height: 1.5; }
+.hero-badges { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.hbadge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.25rem 0.75rem; border-radius: 999px;
+  font-size: 0.78rem; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+}
+.hb-quantum  { background: rgba(167,139,250,0.15); color: #c4b5fd; border: 1px solid rgba(167,139,250,0.35); }
+.hb-pennylane{ background: rgba(96,165,250,0.12);  color: #93c5fd; border: 1px solid rgba(96,165,250,0.3); }
+.hb-pytorch  { background: rgba(239,68,68,0.12);   color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+.hb-kth      { background: rgba(16,185,129,0.12);  color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 1.25rem 1.5rem;
+  backdrop-filter: blur(12px); transition: border-color 0.2s, box-shadow 0.2s;
+}
+.glass-card:hover { border-color: rgba(167,139,250,0.25); box-shadow: 0 0 20px rgba(139,92,246,0.08); }
+
+/* Metric Tiles */
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+.metric-tile {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px; padding: 1rem 0.75rem; text-align: center; transition: all 0.2s;
+}
+.metric-tile:hover { border-color: rgba(167,139,250,0.3); transform: translateY(-2px); }
+.metric-val { font-size: 1.45rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: #e2e8f0; line-height: 1.1; }
+.metric-lbl { font-size: 0.7rem; color: #64748b; margin-top: 0.3rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+.metric-delta { font-size: 0.74rem; margin-top: 0.2rem; font-family: 'JetBrains Mono', monospace; }
+.delta-good { color: #34d399; } .delta-bad { color: #f87171; } .delta-neu { color: #94a3b8; }
+
+/* Status Pills */
+.status-pill {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.76rem; font-weight: 600;
+}
+.pill-quantum   { background: rgba(167,139,250,0.15); color: #c4b5fd; border: 1px solid rgba(167,139,250,0.3); }
+.pill-classical { background: rgba(96,165,250,0.12);  color: #93c5fd; border: 1px solid rgba(96,165,250,0.25); }
+.pill-training  { background: rgba(251,191,36,0.12);  color: #fcd34d; border: 1px solid rgba(251,191,36,0.3); }
+.pill-complete  { background: rgba(52,211,153,0.12);  color: #6ee7b7; border: 1px solid rgba(52,211,153,0.3); }
+
+/* Training Progress Bar */
+.train-progress-wrap { margin: 0.75rem 0; }
+.train-progress-label { display: flex; justify-content: space-between; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.4rem; }
+.train-progress-track { height: 6px; background: rgba(255,255,255,0.07); border-radius: 999px; overflow: hidden; }
+.train-progress-fill {
+  height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, #7c3aed, #4f46e5, #2563eb);
+  box-shadow: 0 0 10px rgba(124,58,237,0.5); transition: width 0.4s ease;
+}
+
+/* Quantum Circuit Card */
+.qc-card {
+  background: linear-gradient(135deg, rgba(109,40,217,0.12), rgba(37,99,235,0.08));
+  border: 1px solid rgba(139,92,246,0.25); border-radius: 10px; padding: 1rem 1.25rem; margin-top: 0.75rem;
+}
+.qc-title { font-size: 0.82rem; font-weight: 700; color: #a78bfa; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.6rem; }
+.qc-row { display: flex; justify-content: space-between; padding: 0.2rem 0; font-size: 0.82rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.qc-row:last-child { border-bottom: none; }
+.qc-key { color: #94a3b8; } .qc-val { color: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+
+/* Section Headers */
+.section-title { font-size: 1.05rem; font-weight: 700; color: #e2e8f0; margin: 1.5rem 0 0.75rem 0; }
+.section-divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 1.25rem 0; }
+
+/* Comparison Table */
+.comp-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.comp-table th { padding: 0.6rem 0.8rem; text-align: left; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.comp-table td { padding: 0.6rem 0.8rem; color: #cbd5e1; border-bottom: 1px solid rgba(255,255,255,0.04); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+.comp-table tr:hover td { background: rgba(255,255,255,0.02); }
+.comp-table td.model-name { color: #e2e8f0; font-weight: 600; font-family: 'Inter', sans-serif; font-size: 0.85rem; }
+.td-good { color: #34d399 !important; font-weight: 700; } .td-mid { color: #fbbf24 !important; } .td-bad { color: #f87171 !important; }
+
+/* Streamlit overrides */
+div[data-testid="stTabs"] button { font-family: 'Inter', sans-serif !important; font-weight: 600 !important; font-size: 0.88rem !important; }
+div[data-testid="stSidebar"] { background: #0d0f1a !important; }
+.stSelectbox label, .stRadio label, .stSlider label, .stTextInput label { font-size: 0.82rem !important; font-weight: 600 !important; color: #94a3b8 !important; text-transform: uppercase; letter-spacing: 0.05em; }
+button[kind="primary"] {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5) !important;
+  border: none !important; font-weight: 700 !important;
+  box-shadow: 0 4px 15px rgba(124,58,237,0.35) !important; transition: all 0.2s !important;
+}
+button[kind="primary"]:hover { transform: translateY(-1px) !important; box-shadow: 0 6px 20px rgba(124,58,237,0.45) !important; }
+button[kind="secondary"] { background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(255,255,255,0.12) !important; color: #e2e8f0 !important; font-weight: 600 !important; }
+code { font-family: 'JetBrains Mono', monospace !important; font-size: 0.82em !important; background: rgba(255,255,255,0.06) !important; border-radius: 4px; padding: 0.1em 0.35em; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0d0f1a; }
+::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.35); border-radius: 3px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -156,14 +281,98 @@ def generate_synthetic_sample(
     return seq[:half], seq[half:]
 
 
+# ─── Helper utilities ────────────────────────────────────────────────────────
+
+def read_live_history(run: dict) -> list[dict] | None:
+    """Read history.json for a run; return None on parse failure."""
+    if run.get("history_file") is None:
+        return None
+    try:
+        return json.loads(run["history_file"].read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def render_progress_bar(current: int, total: int, label: str = "Training Progress") -> None:
+    """Render an animated styled HTML progress bar."""
+    pct = min(100.0, current / max(total, 1) * 100)
+    fill_grad = "#059669,#10b981" if pct >= 100 else "#7c3aed,#4f46e5,#2563eb"
+    st.markdown(f"""
+    <div class="train-progress-wrap">
+      <div class="train-progress-label">
+        <span>{label}</span>
+        <span style="color:#e2e8f0;font-family:'JetBrains Mono',monospace;font-size:0.82rem">{current}/{total} ({pct:.1f}%)</span>
+      </div>
+      <div class="train-progress-track">
+        <div class="train-progress-fill" style="width:{pct}%;background:linear-gradient(90deg,{fill_grad})"></div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_metric_tiles(metrics: dict, baseline_mse: float | None = None) -> None:
+    """Render premium glassmorphism metric tiles."""
+    mse_delta = ""
+    if baseline_mse is not None and metrics["mse"] > 0:
+        rel = (metrics["mse"] - baseline_mse) / baseline_mse * 100
+        cls = "delta-good" if rel < 0 else "delta-bad"
+        mse_delta = f'<div class="metric-delta {cls}">{"+" if rel > 0 else ""}{rel:.1f}% vs persist.</div>'
+    ssim_txt = f"{metrics['ssim']:.4f}" if HAS_SKIMAGE else "N/A"
+    tiles = [("MSE", f"{metrics['mse']:.6f}", mse_delta),
+             ("MAE", f"{metrics['mae']:.6f}", ""),
+             ("PSNR", f"{metrics['psnr']:.2f} dB", ""),
+             ("SSIM", ssim_txt, "")]
+    html = '<div class="metric-grid">'
+    for lbl, val, delta in tiles:
+        html += f'<div class="metric-tile"><div class="metric-val">{val}</div><div class="metric-lbl">{lbl}</div>{delta}</div>'
+    html += "</div>"
+    st.markdown(html, unsafe_allow_html=True)
+
+
+def styled_fig(nrows: int = 1, ncols: int = 2, figsize: tuple = (11, 3.8)) -> tuple:
+    """Create a pre-styled dark matplotlib figure."""
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize, facecolor="#0d0f1a")
+    if not isinstance(axes, np.ndarray):
+        axes = np.array([axes])
+    for ax in axes.flatten():
+        ax.set_facecolor("#0d0f1a")
+        ax.tick_params(colors="#64748b", labelsize=8)
+        ax.grid(color="#1e293b", linestyle="--", linewidth=0.8, alpha=0.7)
+        for spine in ax.spines.values():
+            spine.set_color("#1e293b")
+    fig.tight_layout(pad=2.0)
+    return fig, axes.flatten()
+
+
 # ==============================================================================
 # SIDEBAR: Checkpoint & Device Selection
 # ==============================================================================
+# ─── Hero Header ─────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="qpred-hero">
+  <div class="hero-title">⚛ QPredRNN Dashboard</div>
+  <div class="hero-sub">
+    Interactive research platform for classical and quantum-enhanced spatiotemporal video prediction.
+    Compare ConvLSTM, PredRNN-V2, and QPredRNN with live metrics, error heatmaps, and per-horizon degradation curves.
+  </div>
+  <div class="hero-badges">
+    <span class="hbadge hb-quantum">⚛ Quantum-Enhanced</span>
+    <span class="hbadge hb-pennylane">PennyLane VQC</span>
+    <span class="hbadge hb-pytorch">PyTorch</span>
+    <span class="hbadge hb-kth">KTH Dataset</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
 with st.sidebar:
-    st.markdown("### ⚛️ QPredRNN Control Panel")
+    st.markdown("### ⚛️ Control Panel")
 
     device_options = ["cuda", "cpu"] if torch.cuda.is_available() else ["cpu"]
     chosen_device = st.selectbox("Inference Device", device_options, index=0)
+    if torch.cuda.is_available():
+        st.caption(f"🟢 GPU: `{torch.cuda.get_device_name(0)}`")
+    else:
+        st.caption("🔵 CPU inference mode")
 
     st.markdown("---")
     st.markdown("#### 1. Select Model & Checkpoint")
@@ -244,34 +453,28 @@ with st.sidebar:
 
 
 # ==============================================================================
-# MAIN APPLICATION INTERFACE
+# MAIN TABS
 # ==============================================================================
-st.markdown("<div class='main-header'>QPredRNN: Spatiotemporal Video Prediction</div>", unsafe_allow_html=True)
-st.markdown(
-    "<div class='sub-header'>Interactive research dashboard for evaluating classical and quantum-enhanced recurrent video predictors.</div>",
-    unsafe_allow_html=True,
-)
-
 tab_pred, tab_compare, tab_training, tab_export = st.tabs([
-    "🔮 Visual Rollout & Metrics",
-    "⚖️ Multi-Model Comparison",
-    "📈 Training History & Curves",
-    "📄 Report & Data Export",
+    "🔮 Rollout & Metrics",
+    "⚖️ Model Comparison",
+    "📈 Training Curves",
+    "📄 Report & Export",
 ])
 
 # ------------------------------------------------------------------------------
 # TAB 1: Visual Rollout & Quantitative Metrics
 # ------------------------------------------------------------------------------
 with tab_pred:
-    st.markdown("### 1. Select Input Video Sequence")
-
-    col_src, col_ctl = st.columns([2, 1])
+    st.markdown('<div class="section-title">📥 Input Sequence</div>', unsafe_allow_html=True)
+    col_src, col_ctl = st.columns([3, 1])
 
     with col_src:
         data_source = st.radio(
-            "Input Sequence Source",
-            ["KTH Processed Dataset", "Synthetic Moving-Square Generator", "Toy Dataset"],
+            "Source",
+            ["KTH Processed Dataset", "Synthetic Moving-Square", "Toy Dataset"],
             horizontal=True,
+            label_visibility="collapsed",
         )
 
     input_frames_cfg = 10
@@ -336,19 +539,16 @@ with tab_pred:
             st.warning("data/toy does not exist. Use Synthetic Generator.")
 
     if seq_x is None:
-        st.info("Generating dynamic synthetic sequence (10 observed frames -> 10 future frames)...")
-        seq_x, seq_y = generate_synthetic_sample(num_frames=input_frames_cfg + output_frames_cfg, size=64)
+        seq_x, seq_y = generate_synthetic_sample(num_frames=input_frames_cfg + output_frames_cfg)
         seq_desc = "Synthetic Moving Square"
 
-    st.markdown("---")
-
-    # Display Input / Observed Strip
-    st.markdown("#### Observed Context Frames")
-    strip_in = tensor_to_pil_strip(seq_x, title=f"INPUT / CONTEXT ({seq_desc})", start_t=1)
+    st.markdown('<div class="section-title">👁 Observed Context Frames</div>', unsafe_allow_html=True)
+    strip_in = tensor_to_pil_strip(seq_x, title=f"CONTEXT ({seq_desc})", start_t=1, border_color=(80, 60, 160))
     st.image(strip_in, use_container_width=True)
+    st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
 
     # Prediction Action
-    btn_predict = st.button("🚀 Run Video Prediction Rollout", type="primary")
+    btn_predict = st.button("🚀 Run Video Prediction Rollout", type="primary", use_container_width=True)
 
     if btn_predict:
         if loaded_model is None:
@@ -371,25 +571,18 @@ with tab_pred:
 
         pred_seq = pred_out[0].cpu()  # (T_out, C, H, W)
 
-        # Quantitative Metrics Computation
         metrics = compute_sequence_metrics(pred_seq, seq_y)
-
-        # Baseline benchmark metrics
         last_frame_baseline = seq_x[-1:].repeat(output_frames_cfg, 1, 1, 1)
         persistence_metrics = compute_sequence_metrics(last_frame_baseline, seq_y)
         mean_frame_baseline = seq_x.mean(dim=0, keepdim=True).repeat(output_frames_cfg, 1, 1, 1)
         mean_metrics = compute_sequence_metrics(mean_frame_baseline, seq_y)
 
-        st.markdown("#### 🎯 Rollout Performance Metrics")
-        m1, m2, m3, m4, m5 = st.columns(5)
-        m1.metric("MSE Loss", f"{metrics['mse']:.6f}")
-        m2.metric("MAE", f"{metrics['mae']:.6f}")
-        m3.metric("PSNR (dB)", f"{metrics['psnr']:.2f}")
-        m4.metric("SSIM", f"{metrics['ssim']:.4f}" if HAS_SKIMAGE else "N/A")
-        m5.metric("Latency", f"{latency_ms:.1f} ms")
+        st.markdown('<div class="section-title">🎯 Rollout Performance</div>', unsafe_allow_html=True)
+        render_metric_tiles(metrics, baseline_mse=persistence_metrics["mse"])
+        st.caption(f"⚡ Inference latency: **{latency_ms:.1f} ms**")
 
-        with st.expander("🔬 Statistical Distribution & Baseline Diagnostics", expanded=True):
-            st.markdown("##### 1. Tensor Value Distribution & Range Audit")
+        with st.expander("🔬 Tensor Distribution & Baseline Diagnostics", expanded=False):
+            st.markdown("##### Value Ranges & Statistics")
             col_st1, col_st2, col_st3 = st.columns(3)
             with col_st1:
                 st.markdown(
@@ -418,10 +611,7 @@ with tab_pred:
                     f"- Finite Values: `{torch.isfinite(pred_seq).all().item()}`"
                 )
 
-            st.markdown("##### 2. Benchmark Against Non-Parametric Baselines")
-            st.caption(
-                "A model producing unadapted ~0.50 mid-grey frames suffers high error because it cannot preserve scene background intensity."
-            )
+            st.markdown("##### Non-Parametric Baseline Comparison")
             model_disp_name = getattr(model_eval, "model_name", "Selected Model")
             b_rows = [
                 {
@@ -448,99 +638,66 @@ with tab_pred:
             ]
             st.table(b_rows)
 
-        st.markdown("---")
-        st.markdown("#### Visual Comparison: Predicted vs Ground Truth Future")
+        st.markdown('<div class="section-title">🎞 Visual Comparison</div>', unsafe_allow_html=True)
 
         c_pred, c_gt = st.columns(2)
-        with c_pred:
-            strip_pred = tensor_to_pil_strip(
-                pred_seq,
-                title=f"MODEL PREDICTION ({output_frames_cfg} frames)",
-                start_t=input_frames_cfg + 1,
-            )
-            st.image(strip_pred, caption="Autoregressive Predictions", use_container_width=True)
+        with c_pred: # noqa: E501
+            strip_pred = tensor_to_pil_strip(pred_seq, title="PREDICTION", start_t=input_frames_cfg + 1, border_color=(80, 50, 160))
+            st.image(strip_pred, caption="Model Predictions", use_container_width=True)
 
         with c_gt:
-            strip_gt = tensor_to_pil_strip(
-                seq_y,
-                title=f"GROUND TRUTH TARGET ({output_frames_cfg} frames)",
-                start_t=input_frames_cfg + 1,
-            )
-            st.image(strip_gt, caption="Actual Future Ground Truth", use_container_width=True)
+            strip_gt = tensor_to_pil_strip(seq_y, title="GROUND TRUTH", start_t=input_frames_cfg + 1, border_color=(30, 100, 80))
+            st.image(strip_gt, caption="Ground Truth Future", use_container_width=True)
 
-        # Difference Heatmap
-        st.markdown("#### Absolute Error Heatmap (|Ground Truth - Prediction|)")
+        st.markdown('<div class="section-title">🌡 Absolute Error Heatmap</div>', unsafe_allow_html=True)
         diff_seq = torch.abs(seq_y - pred_seq)
-        strip_diff = tensor_to_pil_strip(
-            diff_seq,
-            title="ABSOLUTE ERROR HEATMAP (Dark = 0, Bright = High Error)",
-            start_t=input_frames_cfg + 1,
-            cmap_name="magma",
-        )
-        st.image(strip_diff, caption="Per-pixel Error Distribution", use_container_width=True)
+        strip_diff = tensor_to_pil_strip(diff_seq, title="|GT − PRED| Error (magma)", start_t=input_frames_cfg + 1, cmap_name="magma")
+        st.image(strip_diff, caption="Per-pixel absolute error (dark=low, bright=high)", use_container_width=True)
 
-        # Per-horizon metric curves
-        st.markdown("#### Per-Frame Degradation Curves Across Prediction Horizon")
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 3.5), facecolor="#1e222d")
-        for ax in (ax1, ax2):
-            ax.set_facecolor("#1e222d")
-            ax.tick_params(colors="white")
-            ax.grid(color="#334155", linestyle="--", alpha=0.5)
-            for spine in ax.spines.values():
-                spine.set_color("#475569")
-
+        st.markdown('<div class="section-title">📉 Per-Frame Degradation Curves</div>', unsafe_allow_html=True)
+        fig_tab1, axes_tab1 = styled_fig(1, 2, figsize=(11, 3.8))
         horizons = list(range(1, output_frames_cfg + 1))
-        ax1.plot(horizons, metrics["per_frame"]["mse"], marker="o", color="#ef4444", label="MSE")
-        ax1.plot(horizons, metrics["per_frame"]["mae"], marker="s", color="#f59e0b", label="MAE")
-        ax1.set_title("Error vs Horizon", color="white")
-        ax1.set_xlabel("Future Step", color="white")
-        ax1.legend(facecolor="#1e222d", edgecolor="#334155", labelcolor="white")
-
-        ax2.plot(horizons, metrics["per_frame"]["psnr"], marker="o", color="#3b82f6", label="PSNR (dB)")
+        axes_tab1[0].plot(horizons, metrics["per_frame"]["mse"], marker="o", color="#f87171", linewidth=2, label="MSE", markersize=5)
+        axes_tab1[0].plot(horizons, metrics["per_frame"]["mae"], marker="s", color="#fbbf24", linewidth=2, label="MAE", markersize=5)
+        axes_tab1[0].set_title("Error vs Horizon", color="#e2e8f0", fontsize=10, fontweight="bold")
+        axes_tab1[0].set_xlabel("Future Step", color="#64748b", fontsize=9)
+        axes_tab1[0].legend(facecolor="#0d0f1a", edgecolor="#1e293b", labelcolor="#94a3b8", fontsize=9)
+        axes_tab1[1].plot(horizons, metrics["per_frame"]["psnr"], marker="o", color="#60a5fa", linewidth=2, label="PSNR (dB)", markersize=5)
         if HAS_SKIMAGE:
-            ax2.plot(horizons, metrics["per_frame"]["ssim"], marker="^", color="#10b981", label="SSIM")
-        ax2.set_title("Quality vs Horizon", color="white")
-        ax2.set_xlabel("Future Step", color="white")
-        ax2.legend(facecolor="#1e222d", edgecolor="#334155", labelcolor="white")
-
-        st.pyplot(fig)
+            axes_tab1[1].plot(horizons, metrics["per_frame"]["ssim"], marker="^", color="#34d399", linewidth=2, label="SSIM", markersize=5)
+        axes_tab1[1].set_title("Quality vs Horizon", color="#e2e8f0", fontsize=10, fontweight="bold")
+        axes_tab1[1].set_xlabel("Future Step", color="#64748b", fontsize=9)
+        axes_tab1[1].legend(facecolor="#0d0f1a", edgecolor="#1e293b", labelcolor="#94a3b8", fontsize=9)
+        st.pyplot(fig_tab1)
+        plt.close(fig_tab1)
+        st.session_state["last_metrics"] = metrics
+        st.session_state["last_ckpt"] = selected_ckpt_path
+        st.session_state["last_latency_ms"] = latency_ms
 
 
 # ------------------------------------------------------------------------------
 # TAB 2: Multi-Model Comparison
 # ------------------------------------------------------------------------------
 with tab_compare:
-    st.markdown("### ⚖️ Side-by-Side Model Architecture Comparison")
-    st.markdown("Compare predictions and metrics across ConvLSTM, PredRNN-V2, and QPredRNN.")
+    st.markdown('<div class="section-title">⚖️ Side-by-Side Model Comparison</div>', unsafe_allow_html=True)
+    st.caption("Compare ConvLSTM, PredRNN-V2, and QPredRNN on the same input sequence.")
 
     suite_choice = st.radio(
-        "Benchmark Comparison Suite",
-        [
-            "TPU v5e-1 50-Epoch Benchmark (Final)",
-            "Local GPU Pilot (10-Epoch Pilot vs Baselines)",
-            "Custom Checkpoint Paths",
-        ],
+        "Benchmark Suite",
+        ["TPU v5e-1 · 50-Epoch Final", "Local GPU · Pilot Runs", "Custom Paths"],
         horizontal=True,
     )
 
-    if suite_choice == "TPU v5e-1 50-Epoch Benchmark (Final)":
+    if suite_choice == "TPU v5e-1 · 50-Epoch Final":
         default_m1 = "runs/kth_classical_tpu_50ep/checkpoint_best.pt"
         default_m2 = "runs/kth_predrnn_v2_tpu_50ep/checkpoint_best.pt"
         default_m3 = "runs/kth_qpredrnn_tpu_50ep/checkpoint_best.pt"
-        st.info(
-            "🚀 **TPU v5e-1 50-Epoch Final Benchmark**: Compares ConvLSTM, PredRNN-V2, and QPredRNN "
-            "trained sequentially under matched 50-epoch budgets on Google Colab TPU v5e-1. "
-            "Import completed runs with `python scripts/import_colab_results.py --source-dir <colab_dir>`."
-        )
-    elif suite_choice == "Local GPU Pilot (10-Epoch Pilot vs Baselines)":
+        st.info("🚀 **TPU v5e-1 50-Epoch Benchmark** — Import with `python scripts/import_colab_results.py --source-dir <dir>`.")
+    elif suite_choice == "Local GPU · Pilot Runs":
         default_m1 = "runs/kth_classical_gpu/checkpoint_best.pt"
         default_m2 = "runs/kth_predrnn_v2_overnight_gpu/checkpoint_best.pt"
         default_m3 = "runs/kth_qpredrnn_pilot_gpu/checkpoint_best.pt"
-        st.warning(
-            "⚠️ **LOCAL PILOT BUDGET NOTE**: ConvLSTM was trained for only 1 epoch (100 steps). "
-            "PredRNN-V2 and QPredRNN share matched 10-epoch pilot budgets (~5,000 steps). "
-            "ConvLSTM's lower MSE in static scenes reflects initialization scale, not superior temporal modeling."
-        )
+        st.warning("⚠️ **Unmatched pilot budgets.** ConvLSTM=1ep, PredRNN-V2=10ep, QPredRNN=10ep. Results are not directly comparable.")
     else:
         default_m1 = "runs/kth_classical_tpu_50ep/checkpoint_best.pt"
         default_m2 = "runs/kth_predrnn_v2_tpu_50ep/checkpoint_best.pt"
@@ -548,233 +705,261 @@ with tab_compare:
 
     col_m1, col_m2, col_m3 = st.columns(3)
     with col_m1:
-        st.markdown("**Model 1: ConvLSTM Baseline**")
-        ckpt_m1 = st.text_input("ConvLSTM Checkpoint", value=default_m1)
+        st.markdown("**🔵 ConvLSTM**")
+        ckpt_m1 = st.text_input("ConvLSTM Path", value=default_m1, key="ckpt_m1")
     with col_m2:
-        st.markdown("**Model 2: PredRNN-V2**")
-        ckpt_m2 = st.text_input("PredRNN-V2 Checkpoint", value=default_m2)
+        st.markdown("**🟢 PredRNN-V2**")
+        ckpt_m2 = st.text_input("PredRNN-V2 Path", value=default_m2, key="ckpt_m2")
     with col_m3:
-        st.markdown("**Model 3: QPredRNN**")
-        ckpt_m3 = st.text_input("QPredRNN Checkpoint", value=default_m3)
+        st.markdown("**🟣 QPredRNN**")
+        ckpt_m3 = st.text_input("QPredRNN Path", value=default_m3, key="ckpt_m3")
 
-    if st.button("Run Multi-Model Comparative Evaluation", type="secondary"):
+    if st.button("▶ Run Comparative Evaluation", type="secondary"):
         models_to_test = [
-            ("ConvLSTM", ckpt_m1),
-            ("PredRNN-V2", ckpt_m2),
-            ("QPredRNN", ckpt_m3),
+            ("ConvLSTM", ckpt_m1, "#3b82f6"),
+            ("PredRNN-V2", ckpt_m2, "#10b981"),
+            ("QPredRNN", ckpt_m3, "#a78bfa"),
         ]
 
         batch_in = seq_x.unsqueeze(0).to(chosen_device)
         comp_results = []
+        prog = st.progress(0, text="Loading models…")
 
-        for name, ckpt_p in models_to_test:
-            ckpt_path_obj = Path(ckpt_p)
-            if ckpt_path_obj.exists():
+        for _ci, (name, ckpt_p, color) in enumerate(models_to_test):
+            prog.progress((_ci + 1) / len(models_to_test), text=f"Evaluating {name}…")
+            if Path(ckpt_p).exists():
                 try:
                     m, ck = load_checkpoint_model(ckpt_p, chosen_device)
                     cfg = ck.get("config", {})
-                    cfg_mod = cfg.get("model", {})
-                    mod_arch = cfg_mod.get("name", name)
-                    target_ep = cfg.get("training", {}).get("epochs")
                     saved_ep = ck.get("epoch", "N/A")
                     saved_st = ck.get("global_step", "N/A")
-
+                    target_ep = cfg.get("training", {}).get("epochs")
                     if isinstance(saved_st, int) and saved_st <= 10:
-                        train_status = f"⚠️ Smoke Test ({saved_st} step{'s' if saved_st != 1 else ''})"
-                    elif isinstance(saved_ep, int) and target_ep is not None and saved_ep < target_ep:
-                        train_status = f"⚠️ Incomplete ({saved_ep}/{target_ep} ep, {saved_st} steps)"
+                        train_status = f"⚠️ Smoke ({saved_st}st)"
+                    elif isinstance(saved_ep, int) and target_ep and saved_ep < target_ep:
+                        train_status = f"⚠️ Partial ({saved_ep}/{target_ep}ep)"
                     elif isinstance(saved_ep, int) and saved_ep >= 50:
-                        train_status = f"Completed 50ep ({saved_ep} ep, {saved_st} steps)"
+                        train_status = "✅ Full 50ep"
                     elif isinstance(saved_ep, int) and saved_ep >= 10:
-                        train_status = f"Pilot ({saved_ep} ep, {saved_st} steps)"
-                    elif isinstance(saved_ep, int) and saved_ep == 1:
-                        train_status = "Smoke / 1-Epoch"
+                        train_status = f"🔵 Pilot ({saved_ep}ep)"
                     else:
-                        train_status = f"Checkpoint (ep {saved_ep})"
-
+                        train_status = f"Epoch {saved_ep}"
                     t0 = time.perf_counter()
                     with torch.no_grad():
                         preds = m(batch_in)[0].cpu()
                     lat = (time.perf_counter() - t0) * 1000.0
                     met = compute_sequence_metrics(preds, seq_y)
                     comp_results.append({
-                        "Model": name,
-                        "Architecture": mod_arch,
-                        "Training Status": train_status,
-                        "Epoch": saved_ep,
-                        "Global Steps": saved_st,
-                        "Checkpoint Path": ckpt_p,
-                        "MSE": met["mse"],
-                        "MAE": met["mae"],
-                        "PSNR (dB)": met["psnr"],
-                        "SSIM": met["ssim"] if HAS_SKIMAGE else "N/A",
-                        "Latency (ms)": lat,
-                        "Predictions": preds,
-                        "per_frame": met["per_frame"],
+                        "Model": name, "Color": color, "Status": train_status,
+                        "Epoch": saved_ep, "Steps": saved_st, "Path": ckpt_p,
+                        "MSE": met["mse"], "MAE": met["mae"],
+                        "PSNR": met["psnr"], "SSIM": met["ssim"],
+                        "Latency": lat, "Preds": preds, "per_frame": met["per_frame"],
                     })
                 except Exception as e:
-                    comp_results.append({
-                        "Model": name,
-                        "Architecture": "Error",
-                        "Training Status": f"Load Error: {e}",
-                        "Epoch": "N/A",
-                        "Global Steps": "N/A",
-                        "Checkpoint Path": ckpt_p,
-                        "MSE": None,
-                    })
+                    comp_results.append({"Model": name, "Color": color, "Error": str(e), "MSE": None})
             else:
-                is_tpu_path = "tpu_50ep" in ckpt_p
-                status_msg = (
-                    "Awaiting Colab TPU Import"
-                    if is_tpu_path
-                    else "Checkpoint Missing"
-                )
+                is_tpu = "tpu_50ep" in ckpt_p
                 comp_results.append({
-                    "Model": name,
-                    "Architecture": "N/A",
-                    "Training Status": status_msg,
-                    "Epoch": "N/A",
-                    "Global Steps": "N/A",
-                    "Checkpoint Path": ckpt_p,
-                    "MSE": None,
+                    "Model": name, "Color": color,
+                    "Status": "🕐 Awaiting TPU Import" if is_tpu else "❌ Not Found",
+                    "MSE": None, "Path": ckpt_p,
                 })
+        prog.empty()
 
-        st.markdown("#### Quantitative Comparison Table")
-        table_rows = []
+        st.markdown('<div class="section-title">📊 Quantitative Results</div>', unsafe_allow_html=True)
+        valid_mses = [r["MSE"] for r in comp_results if r.get("MSE") is not None]
+        best_mse = min(valid_mses) if valid_mses else None
+        tbl = '<table class="comp-table"><tr><th>Model</th><th>Status</th><th>Epoch</th><th>MSE ↓</th><th>MAE ↓</th><th>PSNR ↑</th><th>SSIM ↑</th><th>Latency</th></tr>'
         for r in comp_results:
-            row = {
-                "Model": r["Model"],
-                "Architecture": r.get("Architecture", "N/A"),
-                "Training Status": r.get("Training Status", "N/A"),
-                "Epoch": r.get("Epoch", "N/A"),
-                "Global Steps": r.get("Global Steps", "N/A"),
-            }
-            if r["MSE"] is not None:
-                row["MSE"] = f"{r['MSE']:.6f}"
-                row["MAE"] = f"{r['MAE']:.6f}"
-                row["PSNR"] = f"{r['PSNR (dB)']:.2f}"
-                row["SSIM"] = f"{r['SSIM']:.4f}" if isinstance(r['SSIM'], float) else r['SSIM']
-                row["Latency (ms)"] = f"{r['Latency (ms)']:.1f}"
-            row["Checkpoint Path"] = r.get("Checkpoint Path", "")
-            table_rows.append(row)
+            if r.get("MSE") is not None:
+                mse_cls = "td-good" if r["MSE"] == best_mse else ""
+                ssim_v = f"{r['SSIM']:.4f}" if isinstance(r.get("SSIM"), float) else str(r.get("SSIM", "N/A"))
+                tbl += f'<tr><td class="model-name">{r["Model"]}</td><td>{r.get("Status","")}</td><td>{r.get("Epoch","N/A")}</td><td class="{mse_cls}">{r["MSE"]:.6f}</td><td>{r["MAE"]:.6f}</td><td>{r["PSNR"]:.2f}</td><td>{ssim_v}</td><td>{r["Latency"]:.1f} ms</td></tr>'
+            else:
+                err = r.get("Error", r.get("Status", "N/A"))
+                tbl += f'<tr><td class="model-name">{r["Model"]}</td><td colspan="7" style="color:#64748b">{err}</td></tr>'
+        tbl += "</table>"
+        st.markdown(tbl, unsafe_allow_html=True)
 
-        st.table(table_rows)
-
-        st.markdown("#### Visual Output Comparison")
-        # Show Ground Truth future strip first as reference
-        strip_gt_comp = tensor_to_pil_strip(seq_y, title="GROUND TRUTH FUTURE (Reference Target)")
-        st.image(strip_gt_comp, caption="Actual Ground Truth Future Frames", use_container_width=True)
-
+        st.markdown('<div class="section-title">🎞 Visual Output Comparison</div>', unsafe_allow_html=True)
+        strip_gt_comp = tensor_to_pil_strip(seq_y, title="GROUND TRUTH (Reference)")
+        st.image(strip_gt_comp, caption="Ground Truth Future", use_container_width=True)
         for r in comp_results:
-            if "Predictions" in r:
-                strip = tensor_to_pil_strip(r["Predictions"], title=f"{r['Model']} [{r.get('Training Status', '')}] Output Strip")
-                st.image(strip, caption=f"{r['Model']} ({r.get('Architecture', '')}) Rollout", use_container_width=True)
+            if "Preds" in r:
+                strip = tensor_to_pil_strip(r["Preds"], title=f"{r['Model']} — {r.get('Status','')}")
+                st.image(strip, caption=r["Model"], use_container_width=True)
 
         valid_models = [r for r in comp_results if "per_frame" in r]
         if valid_models:
-            st.markdown("#### Comparative Degradation Across Prediction Horizon")
-            fig_comp, (ax_mse, ax_ssim) = plt.subplots(1, 2, figsize=(10, 3.5), facecolor="#1e222d")
-            for ax in (ax_mse, ax_ssim):
-                ax.set_facecolor("#1e222d")
-                ax.tick_params(colors="white")
-                ax.grid(color="#334155", linestyle="--", alpha=0.5)
-                for spine in ax.spines.values():
-                    spine.set_color("#475569")
-
-            color_map = {"ConvLSTM": "#3b82f6", "PredRNN-V2": "#10b981", "QPredRNN": "#c084fc"}
-            default_colors = ["#3b82f6", "#10b981", "#c084fc", "#f59e0b"]
-            for idx, r in enumerate(valid_models):
-                c = color_map.get(r["Model"], default_colors[idx % len(default_colors)])
+            st.markdown('<div class="section-title">📉 Horizon Degradation</div>', unsafe_allow_html=True)
+            fig_comp, axes_comp = styled_fig(1, 2, figsize=(11, 3.8))
+            for r in valid_models:
+                c = r["Color"]
                 horizons = list(range(1, len(r["per_frame"]["mse"]) + 1))
-                ax_mse.plot(horizons, r["per_frame"]["mse"], marker="o", label=r["Model"], color=c)
+                axes_comp[0].plot(horizons, r["per_frame"]["mse"], marker="o", label=r["Model"], color=c, linewidth=2, markersize=4)
                 if HAS_SKIMAGE and "ssim" in r["per_frame"]:
-                    ax_ssim.plot(horizons, r["per_frame"]["ssim"], marker="^", label=r["Model"], color=c)
-
-            ax_mse.set_title("MSE vs Horizon (Lower = Better)", color="white")
-            ax_mse.set_xlabel("Horizon Step (t)", color="white")
-            ax_mse.legend(facecolor="#1e222d", edgecolor="#334155", labelcolor="white")
-
-            ax_ssim.set_title("SSIM vs Horizon (Higher = Better)", color="white")
-            ax_ssim.set_xlabel("Horizon Step (t)", color="white")
-            ax_ssim.legend(facecolor="#1e222d", edgecolor="#334155", labelcolor="white")
-
+                    axes_comp[1].plot(horizons, r["per_frame"]["ssim"], marker="^", label=r["Model"], color=c, linewidth=2, markersize=4)
+            axes_comp[0].set_title("MSE vs Horizon (↓ Better)", color="#e2e8f0", fontsize=10, fontweight="bold")
+            axes_comp[0].set_xlabel("Horizon Step", color="#64748b", fontsize=9)
+            axes_comp[0].legend(facecolor="#0d0f1a", edgecolor="#1e293b", labelcolor="#94a3b8", fontsize=9)
+            axes_comp[1].set_title("SSIM vs Horizon (↑ Better)", color="#e2e8f0", fontsize=10, fontweight="bold")
+            axes_comp[1].set_xlabel("Horizon Step", color="#64748b", fontsize=9)
+            axes_comp[1].legend(facecolor="#0d0f1a", edgecolor="#1e293b", labelcolor="#94a3b8", fontsize=9)
             st.pyplot(fig_comp)
+            plt.close(fig_comp)
 
 
 # ------------------------------------------------------------------------------
 # TAB 3: Training History & Curves
 # ------------------------------------------------------------------------------
 with tab_training:
-    st.markdown("### 📈 Training Curves & Convergence Comparison")
+    st.markdown('<div class="section-title">📈 Training Convergence Curves</div>', unsafe_allow_html=True)
 
-    available_runs = scan_available_runs()
-    runs_with_history = [r for r in available_runs if r["history_file"] is not None]
+    available_runs_t3 = scan_available_runs()
+    runs_with_history = [r for r in available_runs_t3 if r["history_file"] is not None]
 
     if not runs_with_history:
         st.info("No runs with history.json discovered in runs/ directory.")
     else:
+        run_names_hist = [r["name"] for r in runs_with_history]
         selected_compare_runs = st.multiselect(
             "Select Runs to Plot",
-            [r["name"] for r in runs_with_history],
-            default=[r["name"] for r in runs_with_history][:3],
+            run_names_hist,
+            default=run_names_hist[:min(4, len(run_names_hist))],
         )
 
         if selected_compare_runs:
-            fig_loss, ax_loss = plt.subplots(figsize=(9, 4), facecolor="#1e222d")
-            ax_loss.set_facecolor("#1e222d")
-            ax_loss.tick_params(colors="white")
-            ax_loss.grid(color="#334155", linestyle="--", alpha=0.5)
-            for spine in ax_loss.spines.values():
-                spine.set_color("#475569")
+            _col1, _col2, _col3 = st.columns(3)
+            show_train = _col1.checkbox("Show training loss", value=True)
+            show_val = _col2.checkbox("Show validation loss", value=True)
+            log_scale = _col3.checkbox("Log Y-axis", value=False)
 
-            colors = ["#3b82f6", "#10b981", "#c084fc", "#f59e0b", "#ef4444"]
+            fig_loss, ax_loss = plt.subplots(figsize=(11, 4.5), facecolor="#0d0f1a")
+            ax_loss.set_facecolor("#0d0f1a")
+            ax_loss.tick_params(colors="#64748b", labelsize=8)
+            ax_loss.grid(color="#1e293b", linestyle="--", linewidth=0.8, alpha=0.7)
+            for spine in ax_loss.spines.values():
+                spine.set_color("#1e293b")
+
+            palette = ["#3b82f6", "#10b981", "#a78bfa", "#f59e0b", "#ef4444", "#22d3ee"]
 
             for i, r_name in enumerate(selected_compare_runs):
                 run_obj = next(r for r in runs_with_history if r["name"] == r_name)
-                try:
-                    hist_data = json.loads(run_obj["history_file"].read_text(encoding="utf-8"))
-                    ep_list = [h["epoch"] for h in hist_data]
-                    train_loss = [h["train_loss"] for h in hist_data]
-                    val_loss = [h["val_loss"] for h in hist_data]
+                hist_data = read_live_history(run_obj)
+                if hist_data is None:
+                    st.warning(f"Failed to read history for `{r_name}`")
+                    continue
+                ep_list = [h["epoch"] for h in hist_data]
+                train_loss = [h["train_loss"] for h in hist_data]
+                val_loss = [h["val_loss"] for h in hist_data]
+                c = palette[i % len(palette)]
+                if show_val:
+                    ax_loss.plot(ep_list, val_loss, marker="o", color=c, linewidth=2, markersize=4, label=f"{r_name} (val)", zorder=3)
+                if show_train:
+                    ax_loss.plot(ep_list, train_loss, linestyle="--", marker="s", color=c, linewidth=1.5, markersize=3, alpha=0.6, label=f"{r_name} (train)")
+                # Mark best val epoch
+                best_h = min(hist_data, key=lambda h: h["val_loss"])
+                ax_loss.axvline(x=best_h["epoch"], color=c, linestyle=":", alpha=0.4, linewidth=1)
+                ax_loss.annotate(f"best\n{best_h['val_loss']:.5f}",
+                    xy=(best_h["epoch"], best_h["val_loss"]),
+                    xytext=(5, 5), textcoords="offset points",
+                    fontsize=7, color=c, fontfamily="monospace")
 
-                    c = colors[i % len(colors)]
-                    ax_loss.plot(ep_list, val_loss, marker="o", color=c, label=f"{r_name} (Val)")
-                    ax_loss.plot(ep_list, train_loss, linestyle="--", marker="s", color=c, alpha=0.6, label=f"{r_name} (Train)")
-                except Exception as e:
-                    st.warning(f"Failed to parse history for {r_name}: {e}")
-
-            ax_loss.set_title("Training and Validation MSE Convergence", color="white")
-            ax_loss.set_xlabel("Epoch", color="white")
-            ax_loss.set_ylabel("Loss", color="white")
-            ax_loss.legend(facecolor="#1e222d", edgecolor="#334155", labelcolor="white")
+            if log_scale:
+                ax_loss.set_yscale("log")
+            ax_loss.set_title("Training & Validation MSE Convergence", color="#e2e8f0", fontsize=11, fontweight="bold")
+            ax_loss.set_xlabel("Epoch", color="#64748b", fontsize=9)
+            ax_loss.set_ylabel("MSE Loss" + (" (log)" if log_scale else ""), color="#64748b", fontsize=9)
+            ax_loss.legend(facecolor="#0d0f1a", edgecolor="#1e293b", labelcolor="#94a3b8", fontsize=8, loc="upper right")
             st.pyplot(fig_loss)
+            plt.close(fig_loss)
+
+            # Run summary table
+            st.markdown('<div class="section-title">📋 Run Summary</div>', unsafe_allow_html=True)
+            summary_rows = []
+            for r_name in selected_compare_runs:
+                run_obj = next(r for r in runs_with_history if r["name"] == r_name)
+                hist_data = read_live_history(run_obj)
+                if not hist_data:
+                    continue
+                best_h = min(hist_data, key=lambda h: h["val_loss"])
+                last_h = hist_data[-1]
+                summary_rows.append({
+                    "Run": r_name,
+                    "Epochs Logged": len(hist_data),
+                    "Best Val MSE": f"{best_h['val_loss']:.6f}",
+                    "Best Epoch": best_h["epoch"],
+                    "Last Train MSE": f"{last_h['train_loss']:.6f}",
+                    "Last Val MSE": f"{last_h['val_loss']:.6f}",
+                })
+            if summary_rows:
+                st.table(summary_rows)
 
 
 # ------------------------------------------------------------------------------
 # TAB 4: Report Export
 # ------------------------------------------------------------------------------
 with tab_export:
-    st.markdown("### 📄 Experiment Report Generation & Export")
-    st.markdown("Export reproducible experiment summaries, configuration snapshots, and metric tables.")
+    st.markdown('<div class="section-title">📄 Experiment Report Generator</div>', unsafe_allow_html=True)
+    st.caption("Generate reproducible Markdown summaries with checkpoint metadata, metrics, and configuration snapshots.")
 
-    report_title = st.text_input("Report Title", value="QPredRNN Video Prediction Evaluation Report")
-    notes = st.text_area("Research Notes / Observations", value="Pilot evaluation comparing classical and quantum-enhanced spatiotemporal video prediction.")
+    col_r1, col_r2 = st.columns([2, 1])
+    with col_r1:
+        report_title = st.text_input("Report Title", value="QPredRNN — Video Prediction Evaluation Report")
+        notes = st.text_area("Research Notes", placeholder="Add observations, hypotheses, or conclusions…",
+                             value="Pilot evaluation comparing classical and quantum-enhanced spatiotemporal predictors.", height=100)
+    with col_r2:
+        _rdev = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU"
+        st.markdown(f"""
+        <div class="glass-card" style="margin-top:1.6rem">
+          <div style="font-size:0.7rem;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.5rem">Metadata</div>
+          <div class="qc-row"><span class="qc-key">Timestamp</span><span class="qc-val">{time.strftime('%Y-%m-%d %H:%M')}</span></div>
+          <div class="qc-row"><span class="qc-key">Platform</span><span class="qc-val">{_rdev}</span></div>
+          <div class="qc-row"><span class="qc-key">PyTorch</span><span class="qc-val">{torch.__version__}</span></div>
+          <div class="qc-row"><span class="qc-key">Device</span><span class="qc-val">{chosen_device}</span></div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    if st.button("Generate Markdown Report"):
-        ckpt_label = selected_ckpt_path or "No checkpoint selected"
-        metrics_dict = {}
-        if "metrics" in locals() and metrics:
-            metrics_dict = metrics
+    if st.button("📝 Generate Markdown Report", type="primary"):
+        ckpt_label = st.session_state.get("last_ckpt") or selected_ckpt_path or "None"
+        metrics_dict = st.session_state.get("last_metrics", {})
+        latency = st.session_state.get("last_latency_ms", "N/A")
+        model_type = "Quantum-Enhanced (PennyLane VQC)" if (loaded_model and getattr(loaded_model, "is_quantum", False)) else "Classical Baseline"
+        qc_section = ""
+        if loaded_model and getattr(loaded_model, "is_quantum", False):
+            qc_section = f"""
+## 3. Quantum Circuit Configuration
+| Property | Value |
+| :--- | :--- |
+| Qubits | {loaded_model.n_qubits} |
+| VQC Depth | {loaded_model.circuit_depth} layers |
+| Backend | `{loaded_model.quantum_backend}` |
+| Embedding | AngleEmbedding (RY rotations) |
+| Entangler | BasicEntanglerLayers + CNOT ring |
+| Measurement | Pauli-Z expectation ⟨Z_i⟩ |
 
+> **Disclaimer**: All quantum circuits are simulated on classical hardware via PennyLane `default.qubit`. No physical quantum advantage claimed.
+"""
+        _params_str = f"{sum(p.numel() for p in loaded_model.parameters()):,}" if loaded_model else "N/A"
         report_md = f"""# {report_title}
-**Generated**: {time.strftime("%Y-%m-%d %H:%M:%S")}
-**Platform**: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'}
-**Device**: `{chosen_device}`
 
-## 1. Selected Checkpoint & Model
-- **Checkpoint**: `{ckpt_label}`
-- **Quantum Integration**: {'Enabled (PennyLane VQC)' if loaded_model and getattr(loaded_model, 'is_quantum', False) else 'Classical Baseline'}
-- **Simulation Disclaimer**: All quantum circuits are simulated via PennyLane `default.qubit` statevector simulator on classical hardware.
+**Generated**: {time.strftime('%Y-%m-%d %H:%M:%S')}
+**Platform**: {_rdev}
+**Device**: `{chosen_device}`
+**PyTorch**: `{torch.__version__}`
+
+---
+
+## 1. Checkpoint & Model
+| Field | Value |
+| :--- | :--- |
+| Checkpoint | `{ckpt_label}` |
+| Model Type | {model_type} |
+| Saved Epoch | {loaded_checkpoint.get('epoch', 'N/A') if loaded_checkpoint else 'N/A'} |
+| Global Steps | {loaded_checkpoint.get('global_step', 'N/A') if loaded_checkpoint else 'N/A'} |
+| Parameters | {_params_str} |
+| Best Val Loss | {loaded_checkpoint.get('best_val_loss', 'N/A') if loaded_checkpoint else 'N/A'} |
 
 ## 2. Quantitative Evaluation
 | Metric | Value |
@@ -783,14 +968,45 @@ with tab_export:
 | MAE | {metrics_dict.get('mae', 'N/A')} |
 | PSNR (dB) | {metrics_dict.get('psnr', 'N/A')} |
 | SSIM | {metrics_dict.get('ssim', 'N/A')} |
+| Inference Latency | {f"{latency:.1f} ms" if isinstance(latency, float) else latency} |
+{qc_section}
+## 4. Observations & Notes
 
-## 3. Observations & Notes
 {notes}
+
+---
+*Generated by QPredRNN Research Dashboard*
 """
-        st.text_area("Generated Markdown", value=report_md, height=260)
+        st.text_area("Generated Report (Markdown)", value=report_md, height=320)
         st.download_button(
-            label="📥 Download Report as Markdown (.md)",
+            label="📥 Download as Markdown",
             data=report_md,
-            file_name="qpredrnn_experiment_report.md",
+            file_name=f"qpredrnn_report_{time.strftime('%Y%m%d_%H%M%S')}.md",
             mime="text/markdown",
+            use_container_width=True,
         )
+
+    st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">🗄 All Discovered Runs</div>', unsafe_allow_html=True)
+    _all_runs = scan_available_runs()
+    if _all_runs:
+        _run_table = []
+        for _r in _all_runs:
+            _h = read_live_history(_r) if _r["history_file"] else None
+            _best_val = "-"
+            _last_ep = "-"
+            if _h:
+                _best_h = min(_h, key=lambda h: h["val_loss"])
+                _best_val = f"{_best_h['val_loss']:.6f} (ep {_best_h['epoch']})"
+                _last_ep = str(_h[-1]["epoch"])
+            _run_table.append({
+                "Run": _r["name"],
+                "Best Ckpt": "✓" if _r["best_ckpt"] else "✗",
+                "Last Ckpt": "✓" if _r["last_ckpt"] else "✗",
+                "History": "✓" if _r["history_file"] else "✗",
+                "Last Epoch": _last_ep,
+                "Best Val MSE": _best_val,
+            })
+        st.table(_run_table)
+    else:
+        st.info("No runs found in `runs/`.")
