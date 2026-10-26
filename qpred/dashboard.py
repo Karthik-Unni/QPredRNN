@@ -7,10 +7,13 @@ Run with:
     streamlit run qpred/dashboard.py
 """
 from __future__ import annotations
+
 import io
 import json
 import time
+import traceback
 from pathlib import Path
+from typing import Any
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -218,20 +221,48 @@ def tensor_to_pil_strip(
     title: str = "",
     start_t: int = 1,
     cmap_name: str | None = None,
+    border_color: tuple[int, int, int] | None = None,
+    scale: int = 1,
 ) -> Image.Image:
-    """Convert tensor (T, C, H, W) to horizontal labeled image strip."""
-    t_steps, c, h, w = tensor.shape
-    pad = 4
-    header_h = 24
-    total_w = t_steps * (w + pad) + pad
-    total_h = h + header_h + pad * 2
+    """Convert tensor (T, C, H, W) to horizontal labeled filmstrip image.
 
-    canvas = Image.new("RGB", (total_w, total_h), (20, 24, 33))
+    Args:
+        tensor: Video tensor of shape (T, C, H, W).
+        title: Optional header text drawn above frames.
+        start_t: Starting timestep label (default 1).
+        cmap_name: Matplotlib colormap name (e.g. 'magma') for heatmaps.
+        border_color: Optional RGB tuple for a 2-px border around the strip.
+        scale: Integer upscale factor for small frames (default 1 = no scaling).
+    """
+    if tensor.numel() == 0:
+        return Image.new("RGB", (200, 80), (20, 24, 33))
+
+    tensor = tensor.detach().cpu()
+    # Handle (C,H,W) single frame
+    if tensor.ndim == 3:
+        tensor = tensor.unsqueeze(0)
+
+    t_steps, _c, h, w = tensor.shape
+    h_s, w_s = h * scale, w * scale
+    pad = 5
+    header_h = 28
+    label_h = 18
+    total_w = t_steps * (w_s + pad) + pad
+    total_h = h_s + header_h + label_h + pad * 2
+
+    bg = (14, 16, 24)
+    canvas = Image.new("RGB", (total_w, total_h), bg)
     draw = ImageDraw.Draw(canvas)
-    if title:
-        draw.text((pad + 2, 4), title, fill=(200, 215, 240))
 
-    tensor_np = tensor.detach().cpu().numpy()
+    # Optional border
+    if border_color:
+        draw.rectangle([0, 0, total_w - 1, total_h - 1], outline=border_color, width=2)
+
+    # Header title
+    if title:
+        draw.text((pad + 3, 6), title, fill=(180, 195, 225))
+
+    tensor_np = tensor.numpy()
 
     for i in range(t_steps):
         frame_raw = np.clip(tensor_np[i, 0], 0.0, 1.0)
@@ -243,10 +274,14 @@ def tensor_to_pil_strip(
             frame_gray = (frame_raw * 255.0).astype(np.uint8)
             frame_im = Image.fromarray(frame_gray, mode="L").convert("RGB")
 
-        x_off = pad + i * (w + pad)
+        if scale > 1:
+            frame_im = frame_im.resize((w_s, h_s), Image.NEAREST)
+
+        x_off = pad + i * (w_s + pad)
         y_off = header_h + pad
         canvas.paste(frame_im, (x_off, y_off))
-        draw.text((x_off + 2, y_off + 2), f"t={start_t + i}", fill=(255, 230, 80))
+        # Frame timestep label below image
+        draw.text((x_off + 2, y_off + h_s + 2), f"t={start_t + i}", fill=(255, 215, 50))
 
     return canvas
 
@@ -455,27 +490,30 @@ with st.sidebar:
 # ==============================================================================
 # MAIN TABS
 # ==============================================================================
-tab_pred, tab_compare, tab_training, tab_export = st.tabs([
-    "🔮 Rollout & Metrics",
+tab_pred, tab_compare, tab_training, tab_metrics, tab_export = st.tabs([
+    "🔮 Forecast Explorer",
     "⚖️ Model Comparison",
     "📈 Training Curves",
+    "📊 Evaluation Metrics",
     "📄 Report & Export",
 ])
 
-# ------------------------------------------------------------------------------
-# TAB 1: Visual Rollout & Quantitative Metrics
-# ------------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
+# TAB 1 — FORECAST EXPLORER
+# ─────────────────────────────────────────────────────────────────────────────
 with tab_pred:
-    st.markdown('<div class="section-title">📥 Input Sequence</div>', unsafe_allow_html=True)
-    col_src, col_ctl = st.columns([3, 1])
-
-    with col_src:
+    # ── Dataset / sequence selection ─────────────────────────────────────────
+    st.markdown('<div class="section-title">🎬 Video Sequence Selection</div>', unsafe_allow_html=True)
+    c_src, c_ctl = st.columns([4, 1])
+    with c_src:
         data_source = st.radio(
             "Source",
             ["KTH Processed Dataset", "Synthetic Moving-Square", "Toy Dataset"],
             horizontal=True,
             label_visibility="collapsed",
         )
+    with c_ctl:
+        scale_factor = st.selectbox("Frame Scale", [1, 2, 3, 4], index=1, help="Upscale small 64×64 frames for readability.")
 
     input_frames_cfg = 10
     output_frames_cfg = 10
@@ -490,189 +528,275 @@ with tab_pred:
     if data_source == "KTH Processed Dataset":
         kth_path = Path("data/processed/kth64")
         if kth_path.exists():
-            split_choice = st.selectbox("Dataset Split", ["test", "val", "train"], index=0)
+            col_sp, col_sl = st.columns([1, 3])
+            with col_sp:
+                split_choice = st.selectbox("Split", ["test", "val", "train"], index=0,
+                    help="Use 'test' for the subject-disjoint held-out KTH test set.")
             try:
                 ds = FrameSequenceDataset(
-                    kth_path,
-                    split=split_choice,
-                    input_frames=input_frames_cfg,
-                    output_frames=output_frames_cfg,
-                    stride=2,
+                    kth_path, split=split_choice,
+                    input_frames=input_frames_cfg, output_frames=output_frames_cfg, stride=2,
                 )
-                sample_idx = st.slider(
-                    "Temporal Window (Clip) Index",
-                    0,
-                    len(ds) - 1,
-                    0,
-                    help="Indexes 20-frame sliding temporal windows (clips) extracted with stride=2 from annotated sequence takes.",
-                )
+                with col_sl:
+                    sample_idx = st.slider(
+                        f"Clip Index (0–{len(ds)-1})", 0, max(0, len(ds) - 1), 0,
+                        help="Each index is a 20-frame sliding window (stride=2) from a KTH sequence take.",
+                    )
                 seq_x, seq_y = ds[sample_idx]
                 seq_dir, start_f, _ = ds.items[sample_idx]
                 total_takes = len({item[0] for item in ds.items})
-                total_span = input_frames_cfg + output_frames_cfg
-                seq_desc = f"KTH {split_choice} clip #{sample_idx} [{seq_dir.name}, frame {start_f}..{start_f + total_span - 1}]"
-                st.caption(
-                    f"ℹ️ **KTH Split Structure**: `{split_choice}` contains **{total_takes}** annotated sequence takes producing **{len(ds):,}** temporal sliding clips (stride=2)."
-                )
+                seq_desc = f"KTH/{split_choice} clip #{sample_idx} · {seq_dir.name} · frames {start_f}–{start_f + input_frames_cfg + output_frames_cfg - 1}"
+                st.caption(f"ℹ️ `{split_choice}` split: **{total_takes}** takes → **{len(ds):,}** temporal clips (stride=2)")
             except Exception as e:
-                st.warning(f"Could not load KTH dataset: {e}")
+                st.error(f"❌ KTH dataset load failed: {e}")
+                with st.expander("Traceback", expanded=False):
+                    st.code(traceback.format_exc())
         else:
-            st.warning("data/processed/kth64 does not exist. Use Synthetic Generator or Toy Dataset.")
+            st.warning("⚠️ `data/processed/kth64` not found. Select **Synthetic Moving-Square** or **Toy Dataset**."
+                       "\n\nRun `python scripts/preprocess_kth.py` to generate the dataset.")
 
     elif data_source == "Toy Dataset":
         toy_path = Path("data/toy")
         if toy_path.exists():
-            split_choice = st.selectbox("Split", ["train", "val", "test"], index=1)
-            ds = FrameSequenceDataset(
-                toy_path,
-                split=split_choice,
-                input_frames=input_frames_cfg,
-                output_frames=output_frames_cfg,
-                stride=1,
-            )
-            sample_idx = st.slider("Temporal Window (Clip) Index", 0, len(ds) - 1, 0)
-            seq_x, seq_y = ds[sample_idx]
-            seq_dir, start_f, _ = ds.items[sample_idx]
-            seq_desc = f"Toy {split_choice} clip #{sample_idx} [{seq_dir.name}, frame {start_f}]"
-            st.caption(f"ℹ️ **Toy Split Structure**: `{split_choice}` has **{len(ds)}** temporal clips.")
+            col_sp2, col_sl2 = st.columns([1, 3])
+            with col_sp2:
+                split_choice = st.selectbox("Split", ["train", "val", "test"], index=1)
+            try:
+                ds = FrameSequenceDataset(
+                    toy_path, split=split_choice,
+                    input_frames=input_frames_cfg, output_frames=output_frames_cfg, stride=1,
+                )
+                with col_sl2:
+                    sample_idx = st.slider(f"Clip Index (0–{len(ds)-1})", 0, max(0, len(ds) - 1), 0)
+                seq_x, seq_y = ds[sample_idx]
+                seq_dir, start_f, _ = ds.items[sample_idx]
+                seq_desc = f"Toy/{split_choice} clip #{sample_idx} · {seq_dir.name} · frame {start_f}"
+                st.caption(f"ℹ️ `{split_choice}` split: **{len(ds)}** temporal clips")
+            except Exception as e:
+                st.error(f"❌ Toy dataset load failed: {e}")
         else:
-            st.warning("data/toy does not exist. Use Synthetic Generator.")
+            st.warning("⚠️ `data/toy` not found.")
 
+    # Fall back to synthetic only if no real data was loaded
     if seq_x is None:
-        seq_x, seq_y = generate_synthetic_sample(num_frames=input_frames_cfg + output_frames_cfg)
-        seq_desc = "Synthetic Moving Square"
-
-    st.markdown('<div class="section-title">👁 Observed Context Frames</div>', unsafe_allow_html=True)
-    strip_in = tensor_to_pil_strip(seq_x, title=f"CONTEXT ({seq_desc})", start_t=1, border_color=(80, 60, 160))
-    st.image(strip_in, use_container_width=True)
-    st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
-
-    # Prediction Action
-    btn_predict = st.button("🚀 Run Video Prediction Rollout", type="primary", use_container_width=True)
-
-    if btn_predict:
-        if loaded_model is None:
-            st.warning("No checkpoint loaded! Instantiating an initialized model for demonstration...")
-            config_dummy = {
-                "model": {"name": "predrnn_v2", "hidden_channels": 8, "num_layers": 2, "input_frames": input_frames_cfg, "output_frames": output_frames_cfg},
-            }
-            model_eval = build_model(config_dummy).to(chosen_device)
+        if data_source == "KTH Processed Dataset":
+            # Real dataset was requested but unavailable — do NOT silently swap to synthetic
+            st.error("Cannot show KTH frames — dataset not available. Select 'Synthetic Moving-Square' to proceed.")
         else:
-            model_eval = loaded_model
+            seq_x, seq_y = generate_synthetic_sample(num_frames=input_frames_cfg + output_frames_cfg)
+            seq_desc = "Synthetic Moving Square"
 
-        model_eval.eval()
+    if seq_x is not None:
+        # ── Context filmstrip ────────────────────────────────────────────────
+        st.markdown('<div class="section-title">👁 Observed Context Frames</div>', unsafe_allow_html=True)
+        strip_in = tensor_to_pil_strip(
+            seq_x, title=f"CONTEXT  ·  {seq_desc}",
+            start_t=1, border_color=(60, 40, 140), scale=scale_factor,
+        )
+        st.image(strip_in, use_container_width=True)
+        st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
 
-        batch_in = seq_x.unsqueeze(0).to(chosen_device)  # (1, T_in, C, H, W)
+        # ── Run prediction button ─────────────────────────────────────────────
+        btn_col, info_col = st.columns([2, 3])
+        with btn_col:
+            btn_predict = st.button("🚀 Run Prediction Rollout", type="primary", use_container_width=True,
+                                    help="Runs autoregressive inference through the selected model for all output frames.")
+        with info_col:
+            if loaded_model is None:
+                st.warning("⚠️ No checkpoint loaded — prediction will use a random-init demo model.")
+            else:
+                ck_ep = loaded_checkpoint.get("epoch", "?") if loaded_checkpoint else "?"
+                ck_best = loaded_checkpoint.get("best_val_loss", None) if loaded_checkpoint else None
+                best_str = f" · best val MSE `{ck_best:.6f}`" if isinstance(ck_best, float) else ""
+                st.info(f"✅ Loaded checkpoint epoch **{ck_ep}**{best_str}")
 
-        t_start = time.perf_counter()
-        with torch.no_grad():
-            pred_out = model_eval(batch_in)  # (1, T_out, C, H, W)
-        latency_ms = (time.perf_counter() - t_start) * 1000.0
+        if btn_predict:
+            if loaded_model is None:
+                st.warning("Using random-init demo model (no checkpoint selected).")
+                config_dummy = {"model": {"name": "predrnn_v2", "hidden_channels": 8, "num_layers": 2,
+                                          "input_frames": input_frames_cfg, "output_frames": output_frames_cfg}}
+                model_eval = build_model(config_dummy).to(chosen_device)
+            else:
+                model_eval = loaded_model
 
-        pred_seq = pred_out[0].cpu()  # (T_out, C, H, W)
+            model_eval.eval()
+            batch_in = seq_x.unsqueeze(0).to(chosen_device)
 
-        metrics = compute_sequence_metrics(pred_seq, seq_y)
-        last_frame_baseline = seq_x[-1:].repeat(output_frames_cfg, 1, 1, 1)
-        persistence_metrics = compute_sequence_metrics(last_frame_baseline, seq_y)
-        mean_frame_baseline = seq_x.mean(dim=0, keepdim=True).repeat(output_frames_cfg, 1, 1, 1)
-        mean_metrics = compute_sequence_metrics(mean_frame_baseline, seq_y)
+            pred_seq = None
+            pred_error_msg = None
+            try:
+                t_start = time.perf_counter()
+                with torch.no_grad():
+                    pred_out = model_eval(batch_in)
+                latency_ms = (time.perf_counter() - t_start) * 1000.0
+                pred_seq = pred_out[0].cpu()
+            except Exception as e:
+                pred_error_msg = str(e)
+                pred_tb = traceback.format_exc()
 
-        st.markdown('<div class="section-title">🎯 Rollout Performance</div>', unsafe_allow_html=True)
-        render_metric_tiles(metrics, baseline_mse=persistence_metrics["mse"])
-        st.caption(f"⚡ Inference latency: **{latency_ms:.1f} ms**")
+            if pred_seq is None:
+                st.error(f"❌ Prediction failed: {pred_error_msg}")
+                with st.expander("🔍 Full Traceback", expanded=True):
+                    st.code(pred_tb, language="python")
+                st.info("Remaining dashboard sections (training curves, comparison, export) are unaffected.")
+            else:
+                # ── Metrics ─────────────────────────────────────────────────
+                metrics = compute_sequence_metrics(pred_seq, seq_y)
+                last_frame_baseline = seq_x[-1:].repeat(output_frames_cfg, 1, 1, 1)
+                persistence_metrics = compute_sequence_metrics(last_frame_baseline, seq_y)
+                mean_frame_baseline = seq_x.mean(dim=0, keepdim=True).repeat(output_frames_cfg, 1, 1, 1)
+                mean_metrics = compute_sequence_metrics(mean_frame_baseline, seq_y)
 
-        with st.expander("🔬 Tensor Distribution & Baseline Diagnostics", expanded=False):
-            st.markdown("##### Value Ranges & Statistics")
-            col_st1, col_st2, col_st3 = st.columns(3)
-            with col_st1:
-                st.markdown(
-                    f"**Context Input $x$**:\n"
-                    f"- Shape: `{tuple(seq_x.shape)}`\n"
-                    f"- Range: `[{seq_x.min():.4f}, {seq_x.max():.4f}]`\n"
-                    f"- Mean ± Std: `{seq_x.mean():.4f} ± {seq_x.std():.4f}`\n"
-                    f"- Finite Values: `{torch.isfinite(seq_x).all().item()}`"
+                st.markdown('<div class="section-title">🎯 Rollout Performance</div>', unsafe_allow_html=True)
+                render_metric_tiles(metrics, baseline_mse=persistence_metrics["mse"])
+                st.caption(f"⚡ Inference latency: **{latency_ms:.1f} ms** · Output shape: `{tuple(pred_seq.shape)}`")
+
+                # ── 3-Row filmstrip: Context | GT | Prediction ───────────────
+                st.markdown('<div class="section-title">🎞 Full 30-Frame Sequence View</div>', unsafe_allow_html=True)
+                strip_ctx = tensor_to_pil_strip(
+                    seq_x, title="OBSERVED CONTEXT", start_t=1,
+                    border_color=(60, 40, 140), scale=scale_factor,
                 )
-            with col_st2:
-                st.markdown(
-                    f"**Target Future $y$**:\n"
-                    f"- Shape: `{tuple(seq_y.shape)}`\n"
-                    f"- Range: `[{seq_y.min():.4f}, {seq_y.max():.4f}]`\n"
-                    f"- Mean ± Std: `{seq_y.mean():.4f} ± {seq_y.std():.4f}`\n"
-                    f"- Finite Values: `{torch.isfinite(seq_y).all().item()}`"
+                strip_gt = tensor_to_pil_strip(
+                    seq_y, title="GROUND TRUTH FUTURE",
+                    start_t=input_frames_cfg + 1,
+                    border_color=(30, 100, 70), scale=scale_factor,
                 )
-            with col_st3:
-                p_std = float(pred_seq.std())
-                flat_alert = " ⚠️ *(Near-flat uniform gray)*" if p_std < 0.01 else ""
-                st.markdown(
-                    f"**Prediction $\\hat{{y}}$**:\n"
-                    f"- Shape: `{tuple(pred_seq.shape)}`\n"
-                    f"- Range: `[{pred_seq.min():.4f}, {pred_seq.max():.4f}]`\n"
-                    f"- Mean ± Std: `{pred_seq.mean():.4f} ± {p_std:.4f}`{flat_alert}\n"
-                    f"- Finite Values: `{torch.isfinite(pred_seq).all().item()}`"
+                strip_pred = tensor_to_pil_strip(
+                    pred_seq, title="MODEL PREDICTION",
+                    start_t=input_frames_cfg + 1,
+                    border_color=(100, 40, 160), scale=scale_factor,
                 )
+                diff_seq = torch.abs(seq_y - pred_seq)
+                strip_err = tensor_to_pil_strip(
+                    diff_seq, title="|GT − PRED|  ERROR MAP (magma)",
+                    start_t=input_frames_cfg + 1,
+                    cmap_name="magma", scale=scale_factor,
+                )
+                for lbl, strip in [
+                    ("Observed Context (input)", strip_ctx),
+                    ("Ground Truth Future", strip_gt),
+                    ("Model Prediction", strip_pred),
+                    ("Absolute Error Heatmap", strip_err),
+                ]:
+                    st.image(strip, caption=lbl, use_container_width=True)
 
-            st.markdown("##### Non-Parametric Baseline Comparison")
-            model_disp_name = getattr(model_eval, "model_name", "Selected Model")
-            b_rows = [
-                {
-                    "Method": f"{model_disp_name} (Prediction)",
-                    "MSE": f"{metrics['mse']:.6f}",
-                    "MAE": f"{metrics['mae']:.6f}",
-                    "PSNR (dB)": f"{metrics['psnr']:.2f}",
-                    "SSIM": f"{metrics['ssim']:.4f}" if HAS_SKIMAGE else "N/A",
-                },
-                {
-                    "Method": "Persistence Baseline (Repeat Last Context Frame)",
-                    "MSE": f"{persistence_metrics['mse']:.6f}",
-                    "MAE": f"{persistence_metrics['mae']:.6f}",
-                    "PSNR (dB)": f"{persistence_metrics['psnr']:.2f}",
-                    "SSIM": f"{persistence_metrics['ssim']:.4f}" if HAS_SKIMAGE else "N/A",
-                },
-                {
-                    "Method": "Mean Context Baseline (Repeat Average Context Frame)",
-                    "MSE": f"{mean_metrics['mse']:.6f}",
-                    "MAE": f"{mean_metrics['mae']:.6f}",
-                    "PSNR (dB)": f"{mean_metrics['psnr']:.2f}",
-                    "SSIM": f"{mean_metrics['ssim']:.4f}" if HAS_SKIMAGE else "N/A",
-                },
-            ]
-            st.table(b_rows)
+                # ── Frame-by-frame horizon inspector ────────────────────────
+                st.markdown('<div class="section-title">🔭 Frame-by-Frame Horizon Inspector</div>', unsafe_allow_html=True)
+                horizon_idx = st.slider(
+                    "Prediction Horizon (future step)",
+                    1, output_frames_cfg, 1,
+                    help="Select which future step to inspect in detail. t=1 is the next frame after context.",
+                )
+                fi = horizon_idx - 1  # 0-indexed
+                hcols = st.columns(4)
+                # GT frame
+                gt_frame_np = (seq_y[fi, 0].cpu().numpy() * 255).astype(np.uint8)
+                gt_frame_img = Image.fromarray(gt_frame_np, mode="L").resize(
+                    (gt_frame_np.shape[1] * 4, gt_frame_np.shape[0] * 4), Image.NEAREST
+                )
+                # Pred frame
+                pr_frame_np = np.clip(pred_seq[fi, 0].cpu().numpy(), 0, 1)
+                pr_frame_np_u8 = (pr_frame_np * 255).astype(np.uint8)
+                pr_frame_img = Image.fromarray(pr_frame_np_u8, mode="L").resize(
+                    (pr_frame_np_u8.shape[1] * 4, pr_frame_np_u8.shape[0] * 4), Image.NEAREST
+                )
+                # Error frame (magma)
+                err_frame_np = np.clip(diff_seq[fi, 0].cpu().numpy(), 0, 1)
+                cm_m = plt.get_cmap("magma")
+                err_colored = (cm_m(err_frame_np)[:, :, :3] * 255).astype(np.uint8)
+                err_frame_img = Image.fromarray(err_colored).resize(
+                    (err_colored.shape[1] * 4, err_colored.shape[0] * 4), Image.NEAREST
+                )
+                # Last context frame
+                ctx_last_np = (seq_x[-1, 0].cpu().numpy() * 255).astype(np.uint8)
+                ctx_last_img = Image.fromarray(ctx_last_np, mode="L").resize(
+                    (ctx_last_np.shape[1] * 4, ctx_last_np.shape[0] * 4), Image.NEAREST
+                )
+                with hcols[0]:
+                    st.image(ctx_last_img, caption="Last Context Frame (t=10)", use_container_width=True)
+                with hcols[1]:
+                    st.image(gt_frame_img, caption=f"Ground Truth t={input_frames_cfg + horizon_idx}", use_container_width=True)
+                with hcols[2]:
+                    st.image(pr_frame_img, caption=f"Prediction t={input_frames_cfg + horizon_idx}", use_container_width=True)
+                with hcols[3]:
+                    st.image(err_frame_img, caption=f"Error Map t={input_frames_cfg + horizon_idx}", use_container_width=True)
 
-        st.markdown('<div class="section-title">🎞 Visual Comparison</div>', unsafe_allow_html=True)
+                # Per-frame metrics for selected horizon
+                pf_mse = metrics["per_frame"]["mse"][fi]
+                pf_mae = metrics["per_frame"]["mae"][fi]
+                pf_psnr = metrics["per_frame"]["psnr"][fi]
+                pf_ssim = metrics["per_frame"]["ssim"][fi] if HAS_SKIMAGE else None
+                hm1, hm2, hm3, hm4 = st.columns(4)
+                hm1.metric("Frame MSE", f"{pf_mse:.6f}")
+                hm2.metric("Frame MAE", f"{pf_mae:.6f}")
+                hm3.metric("Frame PSNR", f"{pf_psnr:.2f} dB")
+                hm4.metric("Frame SSIM", f"{pf_ssim:.4f}" if pf_ssim is not None else "N/A")
 
-        c_pred, c_gt = st.columns(2)
-        with c_pred: # noqa: E501
-            strip_pred = tensor_to_pil_strip(pred_seq, title="PREDICTION", start_t=input_frames_cfg + 1, border_color=(80, 50, 160))
-            st.image(strip_pred, caption="Model Predictions", use_container_width=True)
+                # ── Tensor diagnostics ──────────────────────────────────────
+                with st.expander("🔬 Tensor Diagnostics & Baseline Table", expanded=False):
+                    dc1, dc2, dc3 = st.columns(3)
+                    with dc1:
+                        st.markdown(f"**Context x**\n- Shape: `{tuple(seq_x.shape)}`"
+                                    f"\n- Range: `[{seq_x.min():.4f}, {seq_x.max():.4f}]`"
+                                    f"\n- Std: `{seq_x.std():.4f}`")
+                    with dc2:
+                        st.markdown(f"**Target y**\n- Shape: `{tuple(seq_y.shape)}`"
+                                    f"\n- Range: `[{seq_y.min():.4f}, {seq_y.max():.4f}]`"
+                                    f"\n- Std: `{seq_y.std():.4f}`")
+                    with dc3:
+                        p_std = float(pred_seq.std())
+                        flat_warn = " ⚠️ near-flat" if p_std < 0.01 else ""
+                        st.markdown(f"**Prediction ŷ**{flat_warn}\n- Shape: `{tuple(pred_seq.shape)}`"
+                                    f"\n- Range: `[{pred_seq.min():.4f}, {pred_seq.max():.4f}]`"
+                                    f"\n- Std: `{p_std:.4f}`")
+                    model_disp = getattr(model_eval, "model_name", "Model")
+                    st.table([
+                        {"Method": f"{model_disp}",
+                         "MSE": f"{metrics['mse']:.6f}", "MAE": f"{metrics['mae']:.6f}",
+                         "PSNR": f"{metrics['psnr']:.2f}",
+                         "SSIM": f"{metrics['ssim']:.4f}" if HAS_SKIMAGE else "N/A"},
+                        {"Method": "Persistence baseline",
+                         "MSE": f"{persistence_metrics['mse']:.6f}", "MAE": f"{persistence_metrics['mae']:.6f}",
+                         "PSNR": f"{persistence_metrics['psnr']:.2f}",
+                         "SSIM": f"{persistence_metrics['ssim']:.4f}" if HAS_SKIMAGE else "N/A"},
+                        {"Method": "Mean-context baseline",
+                         "MSE": f"{mean_metrics['mse']:.6f}", "MAE": f"{mean_metrics['mae']:.6f}",
+                         "PSNR": f"{mean_metrics['psnr']:.2f}",
+                         "SSIM": f"{mean_metrics['ssim']:.4f}" if HAS_SKIMAGE else "N/A"},
+                    ])
 
-        with c_gt:
-            strip_gt = tensor_to_pil_strip(seq_y, title="GROUND TRUTH", start_t=input_frames_cfg + 1, border_color=(30, 100, 80))
-            st.image(strip_gt, caption="Ground Truth Future", use_container_width=True)
+                # ── Degradation curves ───────────────────────────────────────
+                st.markdown('<div class="section-title">📉 Per-Frame Degradation Curves</div>', unsafe_allow_html=True)
+                fig_tab1, axes_tab1 = styled_fig(1, 2, figsize=(11, 3.8))
+                horizons = list(range(1, output_frames_cfg + 1))
+                # Highlight the selected horizon
+                axes_tab1[0].plot(horizons, metrics["per_frame"]["mse"], marker="o", color="#f87171",
+                                  linewidth=2, label="MSE", markersize=5)
+                axes_tab1[0].plot(horizons, metrics["per_frame"]["mae"], marker="s", color="#fbbf24",
+                                  linewidth=2, label="MAE", markersize=5)
+                axes_tab1[0].axvline(x=horizon_idx, color="#a78bfa", linestyle="--", linewidth=1.5,
+                                     label=f"Selected (t={input_frames_cfg + horizon_idx})")
+                axes_tab1[0].set_title("Error vs Horizon", color="#e2e8f0", fontsize=10, fontweight="bold")
+                axes_tab1[0].set_xlabel("Future Step", color="#64748b", fontsize=9)
+                axes_tab1[0].legend(facecolor="#0d0f1a", edgecolor="#1e293b", labelcolor="#94a3b8", fontsize=9)
+                axes_tab1[1].plot(horizons, metrics["per_frame"]["psnr"], marker="o", color="#60a5fa",
+                                  linewidth=2, label="PSNR (dB)", markersize=5)
+                if HAS_SKIMAGE:
+                    axes_tab1[1].plot(horizons, metrics["per_frame"]["ssim"], marker="^", color="#34d399",
+                                      linewidth=2, label="SSIM", markersize=5)
+                axes_tab1[1].axvline(x=horizon_idx, color="#a78bfa", linestyle="--", linewidth=1.5)
+                axes_tab1[1].set_title("Quality vs Horizon", color="#e2e8f0", fontsize=10, fontweight="bold")
+                axes_tab1[1].set_xlabel("Future Step", color="#64748b", fontsize=9)
+                axes_tab1[1].legend(facecolor="#0d0f1a", edgecolor="#1e293b", labelcolor="#94a3b8", fontsize=9)
+                st.pyplot(fig_tab1)
+                plt.close(fig_tab1)
 
-        st.markdown('<div class="section-title">🌡 Absolute Error Heatmap</div>', unsafe_allow_html=True)
-        diff_seq = torch.abs(seq_y - pred_seq)
-        strip_diff = tensor_to_pil_strip(diff_seq, title="|GT − PRED| Error (magma)", start_t=input_frames_cfg + 1, cmap_name="magma")
-        st.image(strip_diff, caption="Per-pixel absolute error (dark=low, bright=high)", use_container_width=True)
-
-        st.markdown('<div class="section-title">📉 Per-Frame Degradation Curves</div>', unsafe_allow_html=True)
-        fig_tab1, axes_tab1 = styled_fig(1, 2, figsize=(11, 3.8))
-        horizons = list(range(1, output_frames_cfg + 1))
-        axes_tab1[0].plot(horizons, metrics["per_frame"]["mse"], marker="o", color="#f87171", linewidth=2, label="MSE", markersize=5)
-        axes_tab1[0].plot(horizons, metrics["per_frame"]["mae"], marker="s", color="#fbbf24", linewidth=2, label="MAE", markersize=5)
-        axes_tab1[0].set_title("Error vs Horizon", color="#e2e8f0", fontsize=10, fontweight="bold")
-        axes_tab1[0].set_xlabel("Future Step", color="#64748b", fontsize=9)
-        axes_tab1[0].legend(facecolor="#0d0f1a", edgecolor="#1e293b", labelcolor="#94a3b8", fontsize=9)
-        axes_tab1[1].plot(horizons, metrics["per_frame"]["psnr"], marker="o", color="#60a5fa", linewidth=2, label="PSNR (dB)", markersize=5)
-        if HAS_SKIMAGE:
-            axes_tab1[1].plot(horizons, metrics["per_frame"]["ssim"], marker="^", color="#34d399", linewidth=2, label="SSIM", markersize=5)
-        axes_tab1[1].set_title("Quality vs Horizon", color="#e2e8f0", fontsize=10, fontweight="bold")
-        axes_tab1[1].set_xlabel("Future Step", color="#64748b", fontsize=9)
-        axes_tab1[1].legend(facecolor="#0d0f1a", edgecolor="#1e293b", labelcolor="#94a3b8", fontsize=9)
-        st.pyplot(fig_tab1)
-        plt.close(fig_tab1)
-        st.session_state["last_metrics"] = metrics
-        st.session_state["last_ckpt"] = selected_ckpt_path
-        st.session_state["last_latency_ms"] = latency_ms
+                # Persist to session state for export tab
+                st.session_state["last_metrics"] = metrics
+                st.session_state["last_ckpt"] = selected_ckpt_path
+                st.session_state["last_latency_ms"] = latency_ms
+                st.session_state["last_seq_desc"] = seq_desc
 
 
 # ------------------------------------------------------------------------------
@@ -897,9 +1021,85 @@ with tab_training:
                 st.table(summary_rows)
 
 
-# ------------------------------------------------------------------------------
-# TAB 4: Report Export
-# ------------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
+# TAB 4 — EVALUATION METRICS
+# ─────────────────────────────────────────────────────────────────────────────
+with tab_metrics:
+    st.markdown('<div class="section-title">📊 Checkpoint & Run Evaluation Metrics</div>', unsafe_allow_html=True)
+
+    # Show last computed rollout metrics if available
+    last_metrics = st.session_state.get("last_metrics")
+    if last_metrics:
+        last_ckpt = st.session_state.get("last_ckpt", "N/A")
+        last_desc = st.session_state.get("last_seq_desc", "N/A")
+        st.success(f"**Last rollout:** `{last_ckpt}` on `{last_desc}`")
+        render_metric_tiles(last_metrics)
+
+        # Per-horizon bar chart
+        pf = last_metrics.get("per_frame", {})
+        if pf.get("mse"):
+            st.markdown('<div class="section-title">Per-Horizon Metric Bar Chart</div>', unsafe_allow_html=True)
+            fig_bar, ax_bar = plt.subplots(figsize=(10, 3.5), facecolor="#0d0f1a")
+            ax_bar.set_facecolor("#0d0f1a")
+            ax_bar.tick_params(colors="#64748b", labelsize=8)
+            ax_bar.grid(color="#1e293b", linestyle="--", linewidth=0.8, alpha=0.7)
+            for spine in ax_bar.spines.values():
+                spine.set_color("#1e293b")
+            xp = range(1, len(pf["mse"]) + 1)
+            ax_bar.bar([x - 0.2 for x in xp], pf["mse"], width=0.35, color="#f87171", alpha=0.85, label="MSE")
+            ax_bar.bar([x + 0.2 for x in xp], pf["mae"], width=0.35, color="#fbbf24", alpha=0.85, label="MAE")
+            ax_bar.set_xlabel("Future Step (Horizon)", color="#64748b", fontsize=9)
+            ax_bar.set_title("Per-Frame MSE & MAE", color="#e2e8f0", fontsize=10, fontweight="bold")
+            ax_bar.legend(facecolor="#0d0f1a", edgecolor="#1e293b", labelcolor="#94a3b8", fontsize=9)
+            st.pyplot(fig_bar)
+            plt.close(fig_bar)
+
+            # Raw per-frame table
+            with st.expander("Raw Per-Frame Metric Table", expanded=False):
+                rows = []
+                for i, (m, a, p) in enumerate(zip(pf["mse"], pf["mae"], pf["psnr"])):
+                    row = {"Horizon t": i + 1, "MSE": f"{m:.6f}", "MAE": f"{a:.6f}", "PSNR": f"{p:.2f} dB"}
+                    if HAS_SKIMAGE and pf.get("ssim"):
+                        row["SSIM"] = f"{pf['ssim'][i]:.4f}"
+                    rows.append(row)
+                st.table(rows)
+    else:
+        st.info("Run a **Forecast Explorer** rollout first — results will appear here.")
+
+    st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">All Runs — Training Summary</div>', unsafe_allow_html=True)
+    _all_runs_m = scan_available_runs()
+    if _all_runs_m:
+        mrows = []
+        for _r in _all_runs_m:
+            _h = read_live_history(_r) if _r["history_file"] else None
+            best_val, best_ep, last_ep, steps = "—", "—", "—", "—"
+            status = "⚠️ No history"
+            if _h:
+                _bh = min(_h, key=lambda h: h["val_loss"])
+                best_val = f"{_bh['val_loss']:.6f}"
+                best_ep = str(_bh["epoch"])
+                last_ep = str(_h[-1]["epoch"])
+                steps = f"{_h[-1].get('global_step', '?'):,}" if isinstance(_h[-1].get("global_step"), int) else "?"
+                status = "✅ Complete (50ep)" if _h[-1]["epoch"] >= 50 else f"🔵 {_h[-1]['epoch']}/50 ep"
+            mrows.append({
+                "Run": _r["name"],
+                "Status": status,
+                "Best Val MSE": best_val,
+                "Best Epoch": best_ep,
+                "Last Epoch": last_ep,
+                "Total Steps": steps,
+                "Best Ckpt": "✓" if _r["best_ckpt"] else "✗",
+                "Last Ckpt": "✓" if _r["last_ckpt"] else "✗",
+            })
+        st.table(mrows)
+    else:
+        st.info("No runs found in `runs/`.")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TAB 5 — REPORT & EXPORT
+# ─────────────────────────────────────────────────────────────────────────────
 with tab_export:
     st.markdown('<div class="section-title">📄 Experiment Report Generator</div>', unsafe_allow_html=True)
     st.caption("Generate reproducible Markdown summaries with checkpoint metadata, metrics, and configuration snapshots.")
