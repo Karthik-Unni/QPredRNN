@@ -1,4 +1,4 @@
-﻿# Python bytecode and caches
+# Python bytecode and caches
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -47,3 +47,11 @@ mlruns/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Frontend dependencies and build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.tmp/
+*.tsbuildinfo
+
+
