@@ -1,0 +1,98 @@
+[
+  {
+    "sequence_id": "toy_0000",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0001",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0002",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0003",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0004",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0005",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0006",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0007",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0008",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0009",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0010",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0011",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0012",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0013",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0014",
+    "split": "train"
+  },
+  {
+    "sequence_id": "toy_0015",
+    "split": "val"
+  },
+  {
+    "sequence_id": "toy_0016",
+    "split": "val"
+  },
+  {
+    "sequence_id": "toy_0017",
+    "split": "val"
+  },
+  {
+    "sequence_id": "toy_0018",
+    "split": "val"
+  },
+  {
+    "sequence_id": "toy_0019",
+    "split": "test"
+  },
+  {
+    "sequence_id": "toy_0020",
+    "split": "test"
+  },
+  {
+    "sequence_id": "toy_0021",
+    "split": "test"
+  },
+  {
+    "sequence_id": "toy_0022",
+    "split": "test"
+  },
+  {
+    "sequence_id": "toy_0023",
+    "split": "test"
+  }
+]
