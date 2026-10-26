@@ -1,0 +1,27 @@
+﻿@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-base: 9 10 20;
+    --bg-surface: 15 17 32;
+    --bg-card: 20 23 40;
+    --border: 38 45 72;
+    --text-primary: 226 232 240;
+    --text-muted: 100 116 139;
+    --accent: 99 102 241;
+    --accent-cyan: 34 211 238;
+    --accent-green: 52 211 153;
+    --accent-red: 248 113 113;
+    --accent-amber: 251 191 36;
+  }
+  html { @apply antialiased; }
+  body {
+    background: rgb(var(--bg-base));
+    color: rgb(var(--text-primary));
+    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    @apply text-sm;
+  }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: rgb(var(--bg-base)); }
+  ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.4); border-radius: 2px; }
+}
