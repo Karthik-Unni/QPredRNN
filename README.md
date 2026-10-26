@@ -23,27 +23,32 @@ A research framework for evaluating and comparing classical recurrent video pred
 
 ---
 
-## 2. Interactive Research Dashboard
+## 2. Interactive Research Studio (React + FastAPI)
 
-Launch the Streamlit research dashboard to inspect models, visual rollouts, error heatmaps, and metrics:
+Launch the full-stack React + TypeScript Research Studio with FastAPI backend:
 
 ```bash
-# Launch via Python script:
-python scripts/run_dashboard.py
+# Production mode (FastAPI serves both API and built React SPA at http://127.0.0.1:8000):
+C:\venvs\qpred-gpu\Scripts\python.exe scripts/run_app.py
 
-# Or directly with Streamlit:
-streamlit run qpred/dashboard.py
+# Frontend Development Mode (Hot-reload at http://localhost:5173 with API proxy):
+cd frontend && npm run dev
 ```
 
-### Dashboard Features (Premium Edition):
-- **Animated Hero Header** with glassmorphism design system — Inter/JetBrains Mono typography.
-- **Live Training Monitor** in the sidebar — reads `history.json` and shows an animated progress bar for any run active in the last 20 minutes.
-- **Quantum Circuit Info Card** — VQC configuration (qubits, depth, backend, embedding, entangler, measurement).
-- **Glassmorphism Metric Tiles** with delta comparison vs persistence baseline (↓ green = model beats baseline).
-- **Visual Rollout** — observed context frames, model predictions, ground truth targets, and magma absolute error heatmaps.
-- **Multi-Model Comparison** — styled results table with best-MSE green highlight and per-horizon SSIM/MSE degradation curves.
-- **Training Curves** — log-scale toggle, best-epoch vertical markers, run summary table.
-- **Report & Export** — timestamped Markdown download with quantum circuit configuration section and a full runs inventory table.
+### Full-Stack Studio Features:
+- **Overview Dashboard**: High-level run metrics, hardware monitor, dataset status, and quantum configuration summary.
+- **Visual Forecast Explorer**: Interactive frame-by-frame scrubbing, visual diff magma heatmaps, and per-horizon SSIM/MSE curves.
+- **Training Monitor**: Real-time live loss curves, reverse scheduled sampling schedules ($r_\text{eta}$, $\text{eta}$), and decoupling loss tracking.
+- **Multi-Model Comparison**: Side-by-side benchmark tables comparing ConvLSTM, PredRNN-V2, and QPredRNN against baselines.
+- **Evaluation & Benchmarks**: Horizon-by-horizon metric degradation analysis across lead times $t \in [1, 10]$.
+- **Report & Data Export**: Instant Markdown/JSON research artifact generation and model inventory.
+
+### Alternative Lightweight Streamlit Dashboard:
+```bash
+# Launch Streamlit interface:
+C:\venvs\qpred-gpu\Scripts\python.exe scripts/run_dashboard.py
+```
+
 
 ---
 
@@ -95,3 +100,16 @@ Covers:
 - **GPU Training Guide**: See [`docs/GPU_TRAINING_GUIDE.md`](docs/GPU_TRAINING_GUIDE.md) for full instructions on training ConvLSTM, PredRNN-V2, and QPredRNN on a dedicated GPU machine.
 - **Collaborator Setup**: See [`docs/COLLABORATOR_SETUP.md`](docs/COLLABORATOR_SETUP.md) for step-by-step virtual environment creation and dataset restoration.
 - **Environment Specifications**: See [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) for verified local stack versions and dependency declarations.
+
+---
+
+## 6. Research Audit & Model Verification Deliverables
+
+The repository underwent a rigorous deep-learning systems and research audit. All checkpoints, model architectures, and training histories have been validated:
+
+- **Model Implementation Audit**: [`docs/MODEL_IMPLEMENTATION_AUDIT.md`](docs/MODEL_IMPLEMENTATION_AUDIT.md) — Comprehensive audit of `ConvLSTM`, `PredRNN-V2`, `QPredRNN` (including PennyLane PQC forward pass and gradients), and baseline models.
+- **Complete Checkpoint Inventory**: [`docs/CHECKPOINT_INVENTORY.csv`](docs/CHECKPOINT_INVENTORY.csv) — 24 discovered `.pt` checkpoints with SHA-256 fingerprints, file sizes, parameter counts, load status, and forward-pass smoke validation.
+- **Experiment Registry**: [`docs/EXPERIMENT_REGISTRY.md`](docs/EXPERIMENT_REGISTRY.md) — Standardized human-friendly naming mapped to raw run IDs, epoch counts, validation losses, and experiment tiers.
+- **Evaluation Protocol**: [`docs/EVALUATION_PROTOCOL.md`](docs/EVALUATION_PROTOCOL.md) — Held-out test split definition, metric formulations (MSE, MAE, PSNR, SSIM), and fair comparison criteria.
+- **Verified Held-Out Benchmarks**: [`docs/VERIFIED_BENCHMARKS.csv`](docs/VERIFIED_BENCHMARKS.csv) — Measured performance on 100 test sequence windows from held-out KTH test persons (17–25).
+
