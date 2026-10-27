@@ -113,3 +113,5 @@ The repository underwent a rigorous deep-learning systems and research audit. Al
 - **Evaluation Protocol**: [`docs/EVALUATION_PROTOCOL.md`](docs/EVALUATION_PROTOCOL.md) — Held-out test split definition, metric formulations (MSE, MAE, PSNR, SSIM), and fair comparison criteria.
 - **Verified Held-Out Benchmarks**: [`docs/VERIFIED_BENCHMARKS.csv`](docs/VERIFIED_BENCHMARKS.csv) — Measured performance on 100 test sequence windows from held-out KTH test persons (17–25).
 
+
+
