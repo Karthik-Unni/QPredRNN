@@ -1,0 +1,44 @@
+# ConvLSTM — Final 50-Epoch Full-Dataset Training Configuration
+# Run ID: kth_classical_final_50ep
+#
+# Scientific justification:
+#   - max_train_batches is explicitly null (no cap) so every epoch processes
+#     all 28,389 training windows at batch_size=8 → 3,549 batches/epoch.
+#   - batch_size=8 chosen to fit within 6 GB VRAM on RTX 3050 Laptop GPU.
+#   - Identical preprocessing, normalization, and data splits to
+#     kth_predrnn_v2_final_50ep and kth_qpredrnn_local_50ep for fair comparison.
+#   - hidden_channels=32 matches the original kth_classical.yaml specification.
+#   - Learning rate 5e-4 with Adam optimizer (consistent with baseline).
+#   - No weight scheduler — keeps training transparent and reproducible.
+#
+# Full-dataset epoch definition:
+#   train_windows=28389  batch_size=8  -> batches_per_epoch=3549  (uncapped)
+#   val_windows=29666    batch_size=8  -> val_batches_per_epoch=3709 (uncapped)
+#   total_train_passes=50 * 28389 = 1,419,450 windows
+
+seed: 7
+data_root: data/processed/kth64
+run_dir: runs/kth_classical_final_50ep
+model:
+  name: classical
+  image_channels: 1
+  hidden_channels: 32
+  input_frames: 10
+  output_frames: 10
+  quantum:
+    enabled: false
+    n_qubits: 4
+    circuit_depth: 2
+training:
+  epochs: 50
+  batch_size: 8
+  learning_rate: 0.0005
+  weight_decay: 0.0001
+  num_workers: 0
+  max_train_batches: null
+  max_val_batches: null
+data:
+  image_size: 64
+  input_frames: 10
+  output_frames: 10
+  stride: 2
