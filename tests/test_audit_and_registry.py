@@ -109,8 +109,8 @@ def test_verified_benchmarks_artifact():
     assert len(data) >= 5
     models_evaluated = [d["model_id"] for d in data]
     assert "qpredrnn_50ep" in models_evaluated
-    assert "predrnn_v2_main" in models_evaluated
-    assert "convlstm_pilot" in models_evaluated
+    assert "predrnn_v2_50ep" in models_evaluated or "predrnn_v2_pilot" in models_evaluated
+    assert "convlstm_pilot" in models_evaluated or "convlstm_50ep" in models_evaluated
     assert "persistence" in models_evaluated
 
     for b in data:

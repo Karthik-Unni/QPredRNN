@@ -152,3 +152,106 @@ def test_import_with_config_used_yaml(mock_colab_run, tmp_path: Path):
     assert (imported_run / "config.yaml").exists()
     assert (imported_run / "config_used.yaml").exists()
 
+
+def test_local_gpu_run_provenance(tmp_path: Path):
+    """Verify that local GPU runs are discovered and their hardware provenance is NEVER mislabeled as TPU."""
+    source_root = tmp_path / "staging_local"
+    run_dir = source_root / "kth_predrnn_v2_local_50ep"
+    run_dir.mkdir(parents=True)
+
+    target_epochs = 10
+    config = {
+        "model": {"name": "predrnn_v2", "hidden_dim": 16},
+        "training": {"epochs": target_epochs, "batch_size": 4, "device": "cuda"},
+    }
+    with open(run_dir / "config.yaml", "w", encoding="utf-8") as f:
+        yaml.dump(config, f)
+
+    history = [
+        {"epoch": ep, "global_step": ep * 50, "train_loss": 0.04 / ep, "val_loss": 0.03 / ep}
+        for ep in range(1, target_epochs + 1)
+    ]
+    with open(run_dir / "history.json", "w", encoding="utf-8") as f:
+        json.dump(history, f)
+
+    with open(run_dir / "metrics.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["epoch", "global_step", "train_loss", "val_loss"])
+        writer.writeheader()
+        for rec in history:
+            writer.writerow(rec)
+
+    with open(run_dir / "training.log", "w", encoding="utf-8") as f:
+        f.write("Training on NVIDIA GeForce RTX 3050 Laptop GPU\nFinished 10 epochs\n")
+
+    ckpt = {
+        "epoch": 10,
+        "global_step": 500,
+        "val_loss": 0.003,
+        "best_val_loss": 0.003,
+        "model_state_dict": {"layer.weight": torch.tensor([1.0, 2.0])},
+        "config": config,
+    }
+    torch.save(ckpt, run_dir / "checkpoint_best.pt")
+    torch.save(ckpt, run_dir / "checkpoint_last.pt")
+
+    dest_root = tmp_path / "dest_runs"
+    rep = import_colab_results(source_root, dest_root, dry_run=True)
+
+    assert "kth_predrnn_v2_local_50ep" in rep["runs"]
+    r_rep = rep["runs"]["kth_predrnn_v2_local_50ep"]
+    assert r_rep["found"] is True
+    assert "TPU" not in r_rep["hardware_provenance"]
+    assert "Local GPU" in r_rep["hardware_provenance"] or "CUDA" in r_rep["hardware_provenance"]
+    assert r_rep["status"] == "VERIFIED_DRY_RUN"
+
+
+def test_incomplete_local_run(tmp_path: Path):
+    """Verify that an incomplete local run with missing target epochs is caught and flagged."""
+    source_root = tmp_path / "staging_incomplete"
+    run_dir = source_root / "kth_predrnn_v2_local_50ep"
+    run_dir.mkdir(parents=True)
+
+    target_epochs = 50
+    completed_epochs = 20  # Crashed early
+    config = {
+        "model": {"name": "predrnn_v2", "hidden_dim": 16},
+        "training": {"epochs": target_epochs, "batch_size": 4, "device": "cuda"},
+    }
+    with open(run_dir / "config.yaml", "w", encoding="utf-8") as f:
+        yaml.dump(config, f)
+
+    history = [
+        {"epoch": ep, "global_step": ep * 50, "train_loss": 0.04 / ep, "val_loss": 0.03 / ep}
+        for ep in range(1, completed_epochs + 1)
+    ]
+    with open(run_dir / "history.json", "w", encoding="utf-8") as f:
+        json.dump(history, f)
+
+    with open(run_dir / "metrics.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["epoch", "global_step", "train_loss", "val_loss"])
+        writer.writeheader()
+        for rec in history:
+            writer.writerow(rec)
+
+    with open(run_dir / "training.log", "w", encoding="utf-8") as f:
+        f.write("Training started\nInterrupted at epoch 20\n")
+
+    ckpt = {
+        "epoch": completed_epochs,
+        "global_step": completed_epochs * 50,
+        "val_loss": 0.005,
+        "best_val_loss": 0.005,
+        "model_state_dict": {"layer.weight": torch.tensor([1.0, 2.0])},
+        "config": config,
+    }
+    torch.save(ckpt, run_dir / "checkpoint_best.pt")
+    torch.save(ckpt, run_dir / "checkpoint_last.pt")
+
+    dest_root = tmp_path / "dest_runs"
+    rep = import_colab_results(source_root, dest_root, dry_run=True)
+
+    r_rep = rep["runs"]["kth_predrnn_v2_local_50ep"]
+    assert r_rep["status"] == "INCOMPLETE_RUN"
+    assert any("INCOMPLETE RUN" in d for d in r_rep["consistency"]["discrepancies"])
+
+
