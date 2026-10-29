@@ -23,7 +23,7 @@ export interface Run {
   name: string;
   display_name?: string;
   model_type: string;
-  category?: "primary" | "pilot" | "smoke_test" | "profiling" | "experimental";
+  category?: "primary" | "primary_final" | "pilot" | "smoke_test" | "profiling" | "experimental";
   status?: string;
   description?: string;
   has_best_ckpt: boolean;
@@ -35,6 +35,31 @@ export interface Run {
   history_entries: number;
   path: string;
   config?: Record<string, unknown>;
+}
+
+export interface LiveTrainingStatus {
+  run_id: string;
+  display_name: string;
+  status: "NOT_STARTED" | "INITIALIZING" | "RUNNING" | "COMPLETED";
+  target_epochs: number;
+  completed_epochs: number;
+  current_epoch: number | null;
+  train_loss: number | null;
+  val_loss: number | null;
+  best_val_loss: number | null;
+  best_val_epoch: number | null;
+  last_update_ts: number | null;
+  has_best_ckpt: boolean;
+  history_length: number;
+}
+
+export interface LiveRunHistory {
+  run_id: string;
+  display_name: string;
+  history: HistoryEntry[];
+  status: string;
+  target_epochs: number;
+  completed_epochs: number;
 }
 
 export interface CheckpointItem {
@@ -266,4 +291,6 @@ export const api = {
   compare: (body: CompareRequest) =>
     request<CompareResponse>("/compare", { method: "POST", body: JSON.stringify(body) }),
   metricsInfo: () => request<Record<string, unknown>>("/metrics"),
+  trainingLive: () => request<LiveTrainingStatus[]>("/training/live"),
+  trainingLiveRun: (runId: string) => request<LiveRunHistory>(`/training/live/${runId}`),
 };

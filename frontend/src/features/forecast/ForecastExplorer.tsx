@@ -42,11 +42,16 @@ function FilmStrip({ frames, label, color, startT = 1 }: {
   );
 }
 
+import { useSearchParams } from "react-router-dom";
+
 // ── Main forecast page ───────────────────────────────────────────────────────
 export default function ForecastExplorer() {
+  const [searchParams] = useSearchParams();
+  const initialRun = searchParams.get("run") || "kth_qpredrnn_local_50ep";
+
   const { data: runs = [] } = useQuery({ queryKey: ["runs"], queryFn: api.runs });
 
-  const [runId, setRunId] = useState("kth_qpredrnn_local_50ep");
+  const [runId, setRunId] = useState(initialRun);
   const [ckpt, setCkpt] = useState<"best" | "last">("best");
   const [dataset, setDataset] = useState<"kth" | "toy">("kth");
   const [split, setSplit] = useState<"train" | "val" | "test">("test");
@@ -66,17 +71,17 @@ export default function ForecastExplorer() {
     onSuccess: () => setHorizon(0),
   });
 
-  // Auto-run prediction on mount
+  // Auto-run prediction on mount or when initialRun changes
   useEffect(() => {
     mutate({
-      run_id: "kth_qpredrnn_local_50ep",
+      run_id: initialRun,
       checkpoint: "best",
       dataset: "kth",
       split: "test",
       clip_index: 0,
       device: "cuda",
     });
-  }, [mutate]);
+  }, [mutate, initialRun]);
 
   const selectedRun = runs.find((r) => r.id === runId);
 
@@ -129,8 +134,9 @@ export default function ForecastExplorer() {
         </span>
         {[
           { id: "kth_qpredrnn_local_50ep", label: "🌌 QPredRNN (50ep Local)", col: "#818cf8" },
-          { id: "kth_predrnn_v2_overnight_gpu", label: "⚡ PredRNN-V2 (10ep)", col: "#34d399" },
-          { id: "kth_classical_pilot_gpu", label: "📦 ConvLSTM (10ep)", col: "#60a5fa" },
+          { id: "kth_predrnn_v2_local_50ep", label: "⚡ PredRNN-V2 (50ep Local)", col: "#34d399" },
+          { id: "kth_classical_tpu_50ep", label: "📦 ConvLSTM (50ep TPU)", col: "#60a5fa" },
+          { id: "kth_classical_final_50ep", label: "🚀 ConvLSTM (Final 50ep)", col: "#38bdf8" },
           { id: "baseline_persistence", label: "⏹ Persistence Baseline", col: "#fbbf24" },
           { id: "baseline_mean", label: "📊 Mean Context", col: "#f472b6" },
         ].map((preset) => (
@@ -162,20 +168,33 @@ export default function ForecastExplorer() {
           <div>
             <div style={labelStyle}>Experiment Run</div>
             <select style={selectStyle} value={runId} onChange={e => { setRunId(e.target.value); reset(); }}>
-              <optgroup label="Primary Benchmarks">
+              <optgroup label="Primary 50-Epoch Models">
                 <option value="kth_qpredrnn_local_50ep">QPredRNN — 50-Epoch Local Run</option>
-                <option value="kth_predrnn_v2_overnight_gpu">PredRNN-V2 — 10-Epoch Overnight</option>
+                <option value="kth_predrnn_v2_local_50ep">PredRNN-V2 — 50-Epoch Local Run</option>
+                <option value="kth_classical_tpu_50ep">ConvLSTM — 50-Epoch TPU Run</option>
+                <option value="kth_classical_final_50ep">ConvLSTM — Final 50-Epoch Full-Dataset Run</option>
               </optgroup>
-              <optgroup label="Pilot Studies">
-                <option value="kth_qpredrnn_pilot_gpu">QPredRNN — 10-Epoch Pilot</option>
+              <optgroup label="Pilot & Overnight Studies (10-Epoch)">
+                <option value="kth_predrnn_v2_overnight_gpu">PredRNN-V2 — 10-Epoch Overnight</option>
                 <option value="kth_classical_pilot_gpu">ConvLSTM — 10-Epoch Pilot</option>
+                <option value="kth_qpredrnn_pilot_gpu">QPredRNN — 10-Epoch Pilot</option>
               </optgroup>
               <optgroup label="Analytical Baselines">
                 <option value="baseline_persistence">Persistence Baseline (Last Frame)</option>
                 <option value="baseline_mean">Mean Context Baseline</option>
               </optgroup>
               <optgroup label="Other / Smoke Tests">
-                {runs.filter(r => !["kth_qpredrnn_local_50ep", "kth_predrnn_v2_overnight_gpu", "kth_qpredrnn_pilot_gpu", "kth_classical_pilot_gpu"].includes(r.id)).map(r => (
+                {runs.filter(r => ![
+                  "kth_qpredrnn_local_50ep",
+                  "kth_predrnn_v2_local_50ep",
+                  "kth_classical_tpu_50ep",
+                  "kth_classical_final_50ep",
+                  "kth_predrnn_v2_overnight_gpu",
+                  "kth_qpredrnn_pilot_gpu",
+                  "kth_classical_pilot_gpu",
+                  "baseline_persistence",
+                  "baseline_mean",
+                ].includes(r.id)).map(r => (
                   <option key={r.id} value={r.id}>
                     {r.display_name ?? r.name} {r.has_best_ckpt ? "✓" : ""}
                   </option>

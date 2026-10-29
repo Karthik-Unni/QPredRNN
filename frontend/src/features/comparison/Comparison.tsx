@@ -34,9 +34,30 @@ export default function Comparison() {
       hasBest: true,
     },
     {
+      id: "kth_predrnn_v2_local_50ep",
+      name: "PredRNN-V2 — 50-Epoch Local Run",
+      category: "primary",
+      arch: "PredRNN-V2 (Dual-Memory ST-LSTM)",
+      hasBest: true,
+    },
+    {
+      id: "kth_classical_tpu_50ep",
+      name: "ConvLSTM — 50-Epoch TPU Run",
+      category: "primary",
+      arch: "ConvLSTM (2-Layer Recurrent)",
+      hasBest: true,
+    },
+    {
+      id: "kth_classical_final_50ep",
+      name: "ConvLSTM — Final 50-Epoch Full-Dataset Run",
+      category: "primary",
+      arch: "ConvLSTM (Full Dataset)",
+      hasBest: true,
+    },
+    {
       id: "kth_predrnn_v2_overnight_gpu",
       name: "PredRNN-V2 — 10-Epoch Overnight Run",
-      category: "primary",
+      category: "pilot",
       arch: "PredRNN-V2 (ST-LSTM)",
       hasBest: true,
     },
@@ -86,8 +107,8 @@ export default function Comparison() {
 
   const [selectedIds, setSelectedIds] = useState<string[]>([
     "kth_qpredrnn_local_50ep",
-    "kth_predrnn_v2_overnight_gpu",
-    "kth_classical_pilot_gpu",
+    "kth_predrnn_v2_local_50ep",
+    "kth_classical_tpu_50ep",
     "baseline_persistence",
   ]);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -192,10 +213,10 @@ export default function Comparison() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setSelectedIds(["kth_qpredrnn_local_50ep", "kth_predrnn_v2_overnight_gpu", "kth_classical_pilot_gpu", "baseline_persistence"])}
+              onClick={() => setSelectedIds(["kth_qpredrnn_local_50ep", "kth_predrnn_v2_local_50ep", "kth_classical_tpu_50ep", "baseline_persistence"])}
               className="text-xs text-cyan-400 hover:underline font-mono"
             >
-              Select Primary Trio + Baseline
+              Select 50-Epoch Primary Trio + Baseline
             </button>
           </div>
         </div>
