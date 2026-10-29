@@ -39,7 +39,8 @@ CANONICAL_MODELS = [
         "display_name": "QPredRNN — Quantum-Enhanced Spatiotemporal Prediction",
         "family": "Hybrid Quantum-Classical Deep Learning",
         "description": "Combines SpatioTemporal LSTM with a 4-qubit Parameterized Quantum Circuit (PQC) bottleneck modulating memory flow M_t.",
-        "parameter_count": 57989,
+        # Verified: hidden_channels=8, num_layers=2, kernel_size=3, n_qubits=4, circuit_depth=2
+        "parameter_count": 15485,
         "quantum_enabled": True,
         "n_qubits": 4,
         "circuit_depth": 2,
@@ -55,12 +56,17 @@ CANONICAL_MODELS = [
         "display_name": "PredRNN-V2 — Spatiotemporal Recurrent Video Prediction",
         "family": "Spatiotemporal Recurrent Neural Network",
         "description": "Dual-memory flow architecture (C_t and M_t) with memory decoupling cosine loss and reverse scheduled sampling.",
-        "parameter_count": 51777,
+        # Verified: hidden_channels=8, num_layers=2, kernel_size=3
+        "parameter_count": 15361,
         "quantum_enabled": False,
         "input_frames": 10,
         "output_frames": 10,
         "implementation_file": "qpred/models/predrnn_v2.py",
-        "default_run_id": "kth_predrnn_v2_overnight_gpu",
+        "default_run_id": (
+            "kth_predrnn_v2_final_50ep" if (RUNS_DIR / "kth_predrnn_v2_final_50ep").exists() else
+            ("kth_predrnn_v2_local_50ep" if (RUNS_DIR / "kth_predrnn_v2_local_50ep").exists() else
+             "kth_predrnn_v2_overnight_gpu")
+        ),
     },
     {
         "id": "convlstm",
@@ -68,12 +74,17 @@ CANONICAL_MODELS = [
         "display_name": "ConvLSTM — Classical 2D Recurrent Baseline",
         "family": "Convolutional Long Short-Term Memory",
         "description": "Standard 2-layer ConvLSTM architecture for spatial-temporal sequence extrapolation.",
-        "parameter_count": 338401,
+        # Verified: hidden_channels=32, input_frames=10, output_frames=10, image_channels=1
+        "parameter_count": 112289,
         "quantum_enabled": False,
         "input_frames": 10,
         "output_frames": 10,
         "implementation_file": "qpred/models/convlstm.py",
-        "default_run_id": "kth_classical_pilot_gpu",
+        "default_run_id": (
+            "kth_classical_final_50ep" if (RUNS_DIR / "kth_classical_final_50ep").exists() else
+            ("kth_classical_tpu_50ep" if (RUNS_DIR / "kth_classical_tpu_50ep").exists() else
+             "kth_classical_pilot_gpu")
+        ),
     },
     {
         "id": "persistence",
@@ -104,33 +115,94 @@ CANONICAL_MODELS = [
 ]
 
 RUN_METADATA: dict[str, dict[str, Any]] = {
+    # ------------------------------------------------------------------ #
+    # Final Full-Dataset 50-Epoch Runs (New — Full DataLoader per epoch)  #
+    # ------------------------------------------------------------------ #
+    "kth_classical_final_50ep": {
+        "display_name": "ConvLSTM — Final 50-Epoch Full-Dataset Run",
+        "model_id": "convlstm",
+        "category": "primary_final",
+        "status": "RUNNING" if not (RUNS_DIR / "kth_classical_final_50ep" / "checkpoint_last.pt").exists() else "Completed (Verified)",
+        "hardware_provenance": "Local GPU (NVIDIA RTX 3050 Laptop GPU)",
+        "description": "Full 50-epoch ConvLSTM run. Each epoch processes all 28,389 training windows (3,549 batches @ bs=8). No batch cap. Comparable full-dataset training.",
+        "config_file": "configs/kth_classical_final_50ep.yaml",
+        "train_windows": 28389,
+        "batch_size": 8,
+        "batches_per_epoch": 3549,
+        "max_train_batches": None,
+        "max_val_batches": None,
+        "training_type": "full_dataset",
+    },
+    "kth_predrnn_v2_final_50ep": {
+        "display_name": "PredRNN-V2 — Final 50-Epoch Full-Dataset Run",
+        "model_id": "predrnn_v2",
+        "category": "primary_final",
+        "status": "RUNNING" if not (RUNS_DIR / "kth_predrnn_v2_final_50ep" / "checkpoint_last.pt").exists() else "Completed (Verified)",
+        "hardware_provenance": "Local GPU (NVIDIA RTX 3050 Laptop GPU)",
+        "description": "Full 50-epoch PredRNN-V2 run. Each epoch processes all 28,389 training windows (3,549 batches @ bs=8). Decoupling loss + RSS. No batch cap.",
+        "config_file": "configs/kth_predrnn_v2_final_50ep.yaml",
+        "train_windows": 28389,
+        "batch_size": 8,
+        "batches_per_epoch": 3549,
+        "max_train_batches": None,
+        "max_val_batches": None,
+        "training_type": "full_dataset",
+    },
+    # ------------------------------------------------------------------ #
+    # External 50-Epoch Runs (From Staging — 500-batch/ep cap)           #
+    # ------------------------------------------------------------------ #
+    "kth_classical_tpu_50ep": {
+        "display_name": "ConvLSTM — 50-Epoch TPU Run",
+        "model_id": "convlstm",
+        "category": "primary",
+        "status": "Completed (Verified)",
+        "hardware_provenance": "Google Cloud TPU v5e-1",
+        "description": "50-epoch ConvLSTM trained on Google Cloud TPU v5e-1 (best validation at epoch 19). Training used max_train_batches=500 cap per epoch.",
+        "training_type": "capped_500_batches_per_epoch",
+    },
+    "kth_predrnn_v2_local_50ep": {
+        "display_name": "PredRNN-V2 — 50-Epoch Local Run",
+        "model_id": "predrnn_v2",
+        "category": "primary",
+        "status": "Completed (Verified)",
+        "hardware_provenance": "Local GPU (NVIDIA CUDA)",
+        "description": "50-epoch PredRNN-V2 trained locally with decoupling loss & reverse scheduled sampling. Training used max_train_batches=500 cap per epoch.",
+        "training_type": "capped_500_batches_per_epoch",
+    },
     "kth_qpredrnn_local_50ep": {
         "display_name": "QPredRNN — 50-Epoch Local Run",
         "model_id": "qpredrnn",
         "category": "primary",
         "status": "Completed (Verified)",
-        "description": "50-epoch full local training run with 4-qubit VQC context modulation (best validation at epoch 30)",
+        "hardware_provenance": "Local GPU (NVIDIA CUDA)",
+        "description": "50-epoch QPredRNN run with 4-qubit VQC context modulation. IMPORTANT: max_train_batches=500 cap applied — each 'epoch' processed 500/28389 (1.76%) of the full training dataset. Best validation at epoch 30.",
+        "training_type": "capped_500_batches_per_epoch",
+        "cap_warning": "Each epoch processed only 500 out of 28,389 training windows (1.76%). Not equivalent to full-dataset epochs.",
+    },
+    # 10-Epoch Pilot Options
+    "kth_classical_pilot_gpu": {
+        "display_name": "ConvLSTM — 10-Epoch Pilot Run",
+        "model_id": "convlstm",
+        "category": "pilot",
+        "status": "Completed (Verified)",
+        "hardware_provenance": "Local GPU (NVIDIA CUDA)",
+        "description": "10-epoch classical multi-layer 2D ConvLSTM baseline pilot run",
+    },
+    "kth_predrnn_v2_overnight_gpu": {
+        "display_name": "PredRNN-V2 — 10-Epoch Overnight Run",
+        "model_id": "predrnn_v2",
+        "category": "pilot",
+        "status": "Completed (Verified)",
+        "hardware_provenance": "Local GPU (NVIDIA CUDA)",
+        "description": "10-epoch baseline with memory decoupling & reverse scheduled sampling (pilot option)",
     },
     "kth_qpredrnn_pilot_gpu": {
         "display_name": "QPredRNN — 10-Epoch Pilot Run",
         "model_id": "qpredrnn",
         "category": "pilot",
         "status": "Completed (Verified)",
-        "description": "10-epoch pilot run with 4-qubit VQC context modulation (best validation at epoch 9)",
-    },
-    "kth_predrnn_v2_overnight_gpu": {
-        "display_name": "PredRNN-V2 — 10-Epoch Overnight Run",
-        "model_id": "predrnn_v2",
-        "category": "primary",
-        "status": "Completed (Verified)",
-        "description": "10-epoch baseline with memory decoupling & reverse scheduled sampling",
-    },
-    "kth_classical_pilot_gpu": {
-        "display_name": "ConvLSTM — 10-Epoch Pilot Run",
-        "model_id": "convlstm",
-        "category": "pilot",
-        "status": "Completed (Verified)",
-        "description": "10-epoch classical multi-layer 2D ConvLSTM baseline",
+        "hardware_provenance": "Local GPU (NVIDIA CUDA)",
+        "description": "10-epoch pilot run with 4-qubit VQC context modulation (pilot option)",
     },
     "kth_classical_gpu": {
         "display_name": "ConvLSTM — Early 3-Epoch Run",
@@ -427,6 +499,125 @@ class CompareRequest(BaseModel):
 @app.get("/api/health")
 def health() -> dict:
     return {"status": "ok", "timestamp": time.time()}
+
+
+# --------------------------------------------------------------------------- #
+# Live Training Status                                                         #
+# --------------------------------------------------------------------------- #
+_TRACKED_RUNS = [
+    ("kth_classical_final_50ep", "ConvLSTM — Final 50-Epoch Full-Dataset", 50),
+    ("kth_predrnn_v2_final_50ep", "PredRNN-V2 — Final 50-Epoch Full-Dataset", 50),
+]
+
+
+@app.get("/api/training/live")
+def training_live_status() -> list[dict]:
+    """
+    Returns real-time training status for all tracked runs.
+    Reads actual metrics.csv and history.json from disk.
+    Does NOT use any cached or fabricated data.
+    """
+    results = []
+    import csv as csv_mod
+    for run_id, display_name, target_epochs in _TRACKED_RUNS:
+        run_dir = RUNS_DIR / run_id
+        if not run_dir.exists():
+            results.append({
+                "run_id": run_id,
+                "display_name": display_name,
+                "status": "NOT_STARTED",
+                "target_epochs": target_epochs,
+                "completed_epochs": 0,
+                "current_epoch": None,
+                "train_loss": None,
+                "val_loss": None,
+                "best_val_loss": None,
+                "best_val_epoch": None,
+                "last_update_ts": None,
+                "history": [],
+            })
+            continue
+
+        # Check if completed (checkpoint_last.pt exists after full training)
+        last_ckpt = run_dir / "checkpoint_last.pt"
+        best_ckpt = run_dir / "checkpoint_best.pt"
+        hist_file = run_dir / "history.json"
+        metrics_file = run_dir / "metrics.csv"
+
+        history = []
+        if hist_file.exists():
+            try:
+                history = json.loads(hist_file.read_text(encoding="utf-8"))
+            except Exception:
+                history = []
+
+        completed_epochs = len(history)
+        is_complete = last_ckpt.exists() and completed_epochs >= target_epochs
+        status = "COMPLETED" if is_complete else ("RUNNING" if metrics_file.stat().st_size > 0 or completed_epochs > 0 else "INITIALIZING")
+
+        best_val_loss = None
+        best_val_epoch = None
+        train_loss = None
+        val_loss = None
+        last_update_ts = None
+
+        if history:
+            val_entries = [e for e in history if "val_loss" in e]
+            if val_entries:
+                best_e = min(val_entries, key=lambda e: e["val_loss"])
+                best_val_loss = best_e["val_loss"]
+                best_val_epoch = best_e["epoch"]
+            last_entry = history[-1]
+            train_loss = last_entry.get("train_loss")
+            val_loss = last_entry.get("val_loss")
+
+        if metrics_file.exists():
+            try:
+                mts = metrics_file.stat().st_mtime
+                last_update_ts = mts
+            except Exception:
+                pass
+
+        results.append({
+            "run_id": run_id,
+            "display_name": display_name,
+            "status": status,
+            "target_epochs": target_epochs,
+            "completed_epochs": completed_epochs,
+            "current_epoch": completed_epochs + 1 if not is_complete and status == "RUNNING" else None,
+            "train_loss": round(train_loss, 8) if train_loss is not None else None,
+            "val_loss": round(val_loss, 8) if val_loss is not None else None,
+            "best_val_loss": round(best_val_loss, 8) if best_val_loss is not None else None,
+            "best_val_epoch": best_val_epoch,
+            "last_update_ts": last_update_ts,
+            "has_best_ckpt": best_ckpt.exists(),
+            "history_length": len(history),
+        })
+    return results
+
+
+@app.get("/api/training/live/{run_id}")
+def training_live_run(run_id: str) -> dict:
+    """Returns full history list for a specific tracked run (for chart rendering)."""
+    run_dir = RUNS_DIR / run_id
+    if not run_dir.exists():
+        raise HTTPException(404, f"Run '{run_id}' not found")
+    hist_file = run_dir / "history.json"
+    if not hist_file.exists():
+        return {"run_id": run_id, "history": [], "status": "INITIALIZING"}
+    try:
+        history = json.loads(hist_file.read_text(encoding="utf-8"))
+    except Exception as e:
+        raise HTTPException(500, f"Failed to read history: {e}")
+    meta = RUN_METADATA.get(run_id, {})
+    return {
+        "run_id": run_id,
+        "display_name": meta.get("display_name", run_id),
+        "history": history,
+        "status": "COMPLETED" if (RUNS_DIR / run_id / "checkpoint_last.pt").exists() else "RUNNING",
+        "target_epochs": 50,
+        "completed_epochs": len(history),
+    }
 
 
 @app.get("/api/system")
@@ -761,6 +952,7 @@ def compare_models(req: CompareRequest) -> dict:
         "input_frames": ctx_frames,
         "gt_frames": gt_frames,
         "models": results,
+        "results": results,
     }
 
 
