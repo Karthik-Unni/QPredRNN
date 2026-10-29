@@ -12,14 +12,14 @@
     "evaluated_windows": 100,
     "total_available_windows": 33690,
     "device": "cuda",
-    "evaluation_timestamp": "2026-10-26 18:58:04 UTC",
+    "evaluation_timestamp": "2026-10-27 04:15:15 UTC",
     "metrics": {
       "mse": 0.00225968,
       "mae": 0.01152133,
       "psnr": 27.3579,
       "ssim": 0.930371,
-      "latency_ms_per_window": 14.89,
-      "total_eval_time_s": 1.49
+      "latency_ms_per_window": 13.36,
+      "total_eval_time_s": 1.34
     },
     "per_horizon": {
       "mse": [
@@ -93,14 +93,14 @@
     "evaluated_windows": 100,
     "total_available_windows": 33690,
     "device": "cuda",
-    "evaluation_timestamp": "2026-10-26 18:58:06 UTC",
+    "evaluation_timestamp": "2026-10-27 04:15:16 UTC",
     "metrics": {
       "mse": 0.00190296,
       "mae": 0.01316363,
       "psnr": 27.6477,
       "ssim": 0.918289,
-      "latency_ms_per_window": 14.73,
-      "total_eval_time_s": 1.47
+      "latency_ms_per_window": 9.82,
+      "total_eval_time_s": 0.98
     },
     "per_horizon": {
       "mse": [
@@ -162,247 +162,166 @@
     "notes": "Static baseline repeating temporal mean of context frames"
   },
   {
-    "model_id": "convlstm_pilot",
-    "display_name": "ConvLSTM \u2014 10-Epoch Pilot",
+    "model_id": "convlstm_50ep",
+    "display_name": "ConvLSTM \u2014 50-Epoch TPU Run",
     "architecture_id": "convlstm",
     "architecture": "ConvLSTM (VideoConvLSTM)",
-    "run_id": "kth_classical_pilot_gpu",
-    "checkpoint_path": "runs/kth_classical_pilot_gpu/checkpoint_best.pt",
-    "checkpoint_sha256": "c216a746abee77611590ae2165541288b3484ef15a5bb8a4f5913ba895bcd286",
-    "checkpoint_epoch": 6,
+    "run_id": "kth_classical_tpu_50ep",
+    "checkpoint_path": "runs/kth_classical_tpu_50ep/checkpoint_best.pt",
+    "checkpoint_sha256": "f621494908f61410f510f605bf0e3b9c2f36e4a9fb22fd7df660f53e84dc1e81",
+    "checkpoint_epoch": 19,
     "evaluation_split": "test",
     "evaluated_windows": 100,
     "total_available_windows": 33690,
     "device": "cuda",
-    "evaluation_timestamp": "2026-10-26 18:58:10 UTC",
+    "evaluation_timestamp": "2026-10-27 04:15:20 UTC",
     "metrics": {
-      "mse": 0.01186681,
-      "mae": 0.09876526,
-      "psnr": 19.4394,
-      "ssim": 0.826118,
-      "latency_ms_per_window": 44.84,
-      "total_eval_time_s": 4.48
+      "mse": 0.02129071,
+      "mae": 0.13818499,
+      "psnr": 16.7629,
+      "ssim": 0.790024,
+      "latency_ms_per_window": 41.07,
+      "total_eval_time_s": 4.11
     },
     "per_horizon": {
       "mse": [
-        0.00668484,
-        0.00772492,
-        0.00897925,
-        0.0102605,
-        0.01149582,
-        0.01264711,
-        0.01372851,
-        0.01474527,
-        0.0157209,
-        0.01668099
+        0.01760633,
+        0.01770836,
+        0.01829233,
+        0.01917926,
+        0.02025936,
+        0.021441,
+        0.02268329,
+        0.02395644,
+        0.02524218,
+        0.02653859
       ],
       "mae": [
-        0.07152541,
-        0.0776505,
-        0.08468623,
-        0.09160968,
-        0.09797226,
-        0.10364424,
-        0.10870738,
-        0.11324175,
-        0.11738878,
-        0.12122639
+        0.12468107,
+        0.12509775,
+        0.12738236,
+        0.13083608,
+        0.13491363,
+        0.1392284,
+        0.14359124,
+        0.14788693,
+        0.15208532,
+        0.15614712
       ],
       "psnr": [
-        21.7559,
-        21.1283,
-        20.4732,
-        19.8926,
-        19.398,
-        18.9835,
-        18.627,
-        18.3166,
-        18.0381,
-        17.7806
+        17.544,
+        17.5191,
+        17.3782,
+        17.1725,
+        16.9346,
+        16.6884,
+        16.4438,
+        16.2067,
+        15.9795,
+        15.762
       ],
       "ssim": [
-        0.842284,
-        0.839469,
-        0.835799,
-        0.832079,
-        0.829004,
-        0.825749,
-        0.822395,
-        0.817809,
-        0.812235,
-        0.804359
+        0.808195,
+        0.808904,
+        0.807414,
+        0.804387,
+        0.800537,
+        0.794784,
+        0.787233,
+        0.77666,
+        0.76392,
+        0.748207
       ]
     },
     "distribution": {
-      "min": 0.18827491998672485,
-      "max": 0.8541750311851501,
-      "mean": 0.7483247814178466,
-      "std": 0.09351362219474828
+      "min": 0.1734752655029297,
+      "max": 0.7707037925720215,
+      "mean": 0.7091203484535217,
+      "std": 0.08206591503702976
     },
     "status": "Verified Complete",
-    "notes": "Classical multi-layer 2D ConvLSTM baseline (10 epochs)"
+    "notes": "Full 50-epoch classical 2D ConvLSTM baseline trained on Google Cloud TPU (best validation at epoch 19)"
   },
   {
-    "model_id": "predrnn_v2_main",
-    "display_name": "PredRNN-V2 \u2014 10-Epoch Run",
+    "model_id": "predrnn_v2_50ep",
+    "display_name": "PredRNN-V2 \u2014 50-Epoch Local Run",
     "architecture_id": "predrnn_v2",
     "architecture": "PredRNN-V2 (Dual-Memory ST-LSTM)",
-    "run_id": "kth_predrnn_v2_overnight_gpu",
-    "checkpoint_path": "runs/kth_predrnn_v2_overnight_gpu/checkpoint_best.pt",
-    "checkpoint_sha256": "922e43f095af26025918aa801b06d5c0971a230ba8588658c69ac9269f4c0272",
-    "checkpoint_epoch": 10,
+    "run_id": "kth_predrnn_v2_local_50ep",
+    "checkpoint_path": "runs/kth_predrnn_v2_local_50ep/checkpoint_best.pt",
+    "checkpoint_sha256": "c0e78b704850614c7ef47cf3b0093d2c6a67545d235e05ca67ff2438a188a3b7",
+    "checkpoint_epoch": 50,
     "evaluation_split": "test",
     "evaluated_windows": 100,
     "total_available_windows": 33690,
     "device": "cuda",
-    "evaluation_timestamp": "2026-10-26 18:58:18 UTC",
+    "evaluation_timestamp": "2026-10-27 04:15:27 UTC",
     "metrics": {
-      "mse": 0.02754652,
-      "mae": 0.15844181,
-      "psnr": 15.6,
-      "ssim": 0.773247,
-      "latency_ms_per_window": 75.37,
-      "total_eval_time_s": 7.54
+      "mse": 0.01553307,
+      "mae": 0.11426761,
+      "psnr": 18.164,
+      "ssim": 0.711932,
+      "latency_ms_per_window": 78.81,
+      "total_eval_time_s": 7.88
     },
     "per_horizon": {
       "mse": [
-        0.02727271,
-        0.0276799,
-        0.02782099,
-        0.02779431,
-        0.0276909,
-        0.02756071,
-        0.02744365,
-        0.0273724,
-        0.02736842,
-        0.02746124
+        0.01551433,
+        0.01341719,
+        0.01255257,
+        0.01245821,
+        0.01297827,
+        0.01406897,
+        0.01563743,
+        0.01750934,
+        0.01953518,
+        0.02165918
       ],
       "mae": [
-        0.15810327,
-        0.15916862,
-        0.15946597,
-        0.15930485,
-        0.15894187,
-        0.15849316,
-        0.15806583,
-        0.15772671,
-        0.15755179,
-        0.15759606
+        0.11603238,
+        0.10660827,
+        0.10211959,
+        0.10135701,
+        0.10364372,
+        0.10847559,
+        0.11505078,
+        0.12236428,
+        0.12982729,
+        0.13719718
       ],
       "psnr": [
-        15.643,
-        15.5787,
-        15.5567,
-        15.5609,
-        15.5771,
-        15.5977,
-        15.6163,
-        15.6277,
-        15.6284,
-        15.6138
+        18.0937,
+        18.7251,
+        19.0147,
+        19.0478,
+        18.8703,
+        18.52,
+        18.0607,
+        17.5693,
+        17.0935,
+        16.6451
       ],
       "ssim": [
-        0.809186,
-        0.807327,
-        0.80522,
-        0.801528,
-        0.795754,
-        0.785219,
-        0.769578,
-        0.747333,
-        0.720725,
-        0.690605
+        0.800612,
+        0.803623,
+        0.79763,
+        0.784935,
+        0.763322,
+        0.726222,
+        0.677653,
+        0.627981,
+        0.585997,
+        0.551347
       ]
     },
     "distribution": {
-      "min": 0.1785559356212616,
-      "max": 0.7746331691741943,
-      "mean": 0.6860080361366272,
-      "std": 0.08305747869788799
+      "min": 0.1134084165096283,
+      "max": 0.8239956498146057,
+      "mean": 0.7329034895896912,
+      "std": 0.0939545283326661
     },
     "status": "Verified Complete",
-    "notes": "Official PredRNN-V2 architecture with decoupling loss and reverse scheduled sampling"
-  },
-  {
-    "model_id": "qpredrnn_pilot",
-    "display_name": "QPredRNN \u2014 10-Epoch Pilot",
-    "architecture_id": "qpredrnn",
-    "architecture": "QPredRNN (Hybrid VQC + ST-LSTM)",
-    "run_id": "kth_qpredrnn_pilot_gpu",
-    "checkpoint_path": "runs/kth_qpredrnn_pilot_gpu/checkpoint_best.pt",
-    "checkpoint_sha256": "0e2174c5a2124a9870cc20f1129b2fd582719a2edd7c97245d5a651f87bbb384",
-    "checkpoint_epoch": 9,
-    "evaluation_split": "test",
-    "evaluated_windows": 100,
-    "total_available_windows": 33690,
-    "device": "cuda",
-    "evaluation_timestamp": "2026-10-26 18:58:48 UTC",
-    "metrics": {
-      "mse": 0.02701043,
-      "mae": 0.15733236,
-      "psnr": 15.7084,
-      "ssim": 0.799899,
-      "latency_ms_per_window": 298.94,
-      "total_eval_time_s": 29.89
-    },
-    "per_horizon": {
-      "mse": [
-        0.02237569,
-        0.02360818,
-        0.0247214,
-        0.02572771,
-        0.02668416,
-        0.02760639,
-        0.02851792,
-        0.02941243,
-        0.03029402,
-        0.03115638
-      ],
-      "mae": [
-        0.14287984,
-        0.14680287,
-        0.15031502,
-        0.15348061,
-        0.1564765,
-        0.15933683,
-        0.16211609,
-        0.16478174,
-        0.16735098,
-        0.1697831
-      ],
-      "psnr": [
-        16.5026,
-        16.2698,
-        16.0697,
-        15.8965,
-        15.7379,
-        15.5904,
-        15.4494,
-        15.3152,
-        15.187,
-        15.0651
-      ],
-      "ssim": [
-        0.815933,
-        0.813428,
-        0.811596,
-        0.809885,
-        0.808047,
-        0.804846,
-        0.799749,
-        0.791472,
-        0.77981,
-        0.764221
-      ]
-    },
-    "distribution": {
-      "min": 0.18262873589992523,
-      "max": 0.7502878308296204,
-      "mean": 0.6868943734169006,
-      "std": 0.08315727847423439
-    },
-    "status": "Verified Complete",
-    "notes": "Quantum-enhanced predictive RNN with 4-qubit VQC context modulator (10 epochs)"
+    "notes": "Full 50-epoch spatiotemporal recurrent model trained on Local GPU with decoupling loss & RSS"
   },
   {
     "model_id": "qpredrnn_50ep",
@@ -417,14 +336,14 @@
     "evaluated_windows": 100,
     "total_available_windows": 33690,
     "device": "cuda",
-    "evaluation_timestamp": "2026-10-26 18:59:17 UTC",
+    "evaluation_timestamp": "2026-10-27 04:15:50 UTC",
     "metrics": {
       "mse": 0.01409538,
       "mae": 0.11022811,
       "psnr": 18.6565,
       "ssim": 0.819385,
-      "latency_ms_per_window": 293.52,
-      "total_eval_time_s": 29.35
+      "latency_ms_per_window": 222.63,
+      "total_eval_time_s": 22.26
     },
     "per_horizon": {
       "mse": [
@@ -483,6 +402,249 @@
       "std": 0.09999383035432304
     },
     "status": "Verified Complete",
-    "notes": "Full 50-epoch converged QPredRNN model (best validation at epoch 30)"
+    "notes": "Full 50-epoch converged QPredRNN model trained on Local GPU (best validation at epoch 30)"
+  },
+  {
+    "model_id": "convlstm_pilot",
+    "display_name": "ConvLSTM \u2014 10-Epoch Pilot",
+    "architecture_id": "convlstm",
+    "architecture": "ConvLSTM (VideoConvLSTM)",
+    "run_id": "kth_classical_pilot_gpu",
+    "checkpoint_path": "runs/kth_classical_pilot_gpu/checkpoint_best.pt",
+    "checkpoint_sha256": "c216a746abee77611590ae2165541288b3484ef15a5bb8a4f5913ba895bcd286",
+    "checkpoint_epoch": 6,
+    "evaluation_split": "test",
+    "evaluated_windows": 100,
+    "total_available_windows": 33690,
+    "device": "cuda",
+    "evaluation_timestamp": "2026-10-27 04:15:54 UTC",
+    "metrics": {
+      "mse": 0.01186681,
+      "mae": 0.09876526,
+      "psnr": 19.4394,
+      "ssim": 0.826118,
+      "latency_ms_per_window": 37.81,
+      "total_eval_time_s": 3.78
+    },
+    "per_horizon": {
+      "mse": [
+        0.00668484,
+        0.00772492,
+        0.00897925,
+        0.0102605,
+        0.01149582,
+        0.01264711,
+        0.01372851,
+        0.01474527,
+        0.0157209,
+        0.01668099
+      ],
+      "mae": [
+        0.07152541,
+        0.0776505,
+        0.08468623,
+        0.09160968,
+        0.09797226,
+        0.10364424,
+        0.10870738,
+        0.11324175,
+        0.11738878,
+        0.12122639
+      ],
+      "psnr": [
+        21.7559,
+        21.1283,
+        20.4732,
+        19.8926,
+        19.398,
+        18.9835,
+        18.627,
+        18.3166,
+        18.0381,
+        17.7806
+      ],
+      "ssim": [
+        0.842284,
+        0.839469,
+        0.835799,
+        0.832079,
+        0.829004,
+        0.825749,
+        0.822395,
+        0.817809,
+        0.812235,
+        0.804359
+      ]
+    },
+    "distribution": {
+      "min": 0.18827491998672485,
+      "max": 0.8541750311851501,
+      "mean": 0.7483247814178466,
+      "std": 0.09351362219474828
+    },
+    "status": "Verified Complete",
+    "notes": "Classical multi-layer 2D ConvLSTM baseline (10-epoch pilot run)"
+  },
+  {
+    "model_id": "predrnn_v2_pilot",
+    "display_name": "PredRNN-V2 \u2014 10-Epoch Overnight",
+    "architecture_id": "predrnn_v2",
+    "architecture": "PredRNN-V2 (Dual-Memory ST-LSTM)",
+    "run_id": "kth_predrnn_v2_overnight_gpu",
+    "checkpoint_path": "runs/kth_predrnn_v2_overnight_gpu/checkpoint_best.pt",
+    "checkpoint_sha256": "922e43f095af26025918aa801b06d5c0971a230ba8588658c69ac9269f4c0272",
+    "checkpoint_epoch": 10,
+    "evaluation_split": "test",
+    "evaluated_windows": 100,
+    "total_available_windows": 33690,
+    "device": "cuda",
+    "evaluation_timestamp": "2026-10-27 04:16:01 UTC",
+    "metrics": {
+      "mse": 0.02754652,
+      "mae": 0.15844181,
+      "psnr": 15.6,
+      "ssim": 0.773247,
+      "latency_ms_per_window": 78.42,
+      "total_eval_time_s": 7.84
+    },
+    "per_horizon": {
+      "mse": [
+        0.02727271,
+        0.0276799,
+        0.02782099,
+        0.02779431,
+        0.0276909,
+        0.02756071,
+        0.02744365,
+        0.0273724,
+        0.02736842,
+        0.02746124
+      ],
+      "mae": [
+        0.15810327,
+        0.15916862,
+        0.15946597,
+        0.15930485,
+        0.15894187,
+        0.15849316,
+        0.15806583,
+        0.15772671,
+        0.15755179,
+        0.15759606
+      ],
+      "psnr": [
+        15.643,
+        15.5787,
+        15.5567,
+        15.5609,
+        15.5771,
+        15.5977,
+        15.6163,
+        15.6277,
+        15.6284,
+        15.6138
+      ],
+      "ssim": [
+        0.809186,
+        0.807327,
+        0.80522,
+        0.801528,
+        0.795754,
+        0.785219,
+        0.769578,
+        0.747333,
+        0.720725,
+        0.690605
+      ]
+    },
+    "distribution": {
+      "min": 0.1785559356212616,
+      "max": 0.7746331691741943,
+      "mean": 0.6860080361366272,
+      "std": 0.08305747869788799
+    },
+    "status": "Verified Complete",
+    "notes": "PredRNN-V2 architecture with decoupling loss and reverse scheduled sampling (10-epoch overnight run)"
+  },
+  {
+    "model_id": "qpredrnn_pilot",
+    "display_name": "QPredRNN \u2014 10-Epoch Pilot",
+    "architecture_id": "qpredrnn",
+    "architecture": "QPredRNN (Hybrid VQC + ST-LSTM)",
+    "run_id": "kth_qpredrnn_pilot_gpu",
+    "checkpoint_path": "runs/kth_qpredrnn_pilot_gpu/checkpoint_best.pt",
+    "checkpoint_sha256": "0e2174c5a2124a9870cc20f1129b2fd582719a2edd7c97245d5a651f87bbb384",
+    "checkpoint_epoch": 9,
+    "evaluation_split": "test",
+    "evaluated_windows": 100,
+    "total_available_windows": 33690,
+    "device": "cuda",
+    "evaluation_timestamp": "2026-10-27 04:16:23 UTC",
+    "metrics": {
+      "mse": 0.02701043,
+      "mae": 0.15733236,
+      "psnr": 15.7084,
+      "ssim": 0.799899,
+      "latency_ms_per_window": 219.41,
+      "total_eval_time_s": 21.94
+    },
+    "per_horizon": {
+      "mse": [
+        0.02237569,
+        0.02360818,
+        0.0247214,
+        0.02572771,
+        0.02668416,
+        0.02760639,
+        0.02851792,
+        0.02941243,
+        0.03029402,
+        0.03115638
+      ],
+      "mae": [
+        0.14287984,
+        0.14680287,
+        0.15031502,
+        0.15348061,
+        0.1564765,
+        0.15933683,
+        0.16211609,
+        0.16478174,
+        0.16735098,
+        0.1697831
+      ],
+      "psnr": [
+        16.5026,
+        16.2698,
+        16.0697,
+        15.8965,
+        15.7379,
+        15.5904,
+        15.4494,
+        15.3152,
+        15.187,
+        15.0651
+      ],
+      "ssim": [
+        0.815933,
+        0.813428,
+        0.811596,
+        0.809885,
+        0.808047,
+        0.804846,
+        0.799749,
+        0.791472,
+        0.77981,
+        0.764221
+      ]
+    },
+    "distribution": {
+      "min": 0.18262873589992523,
+      "max": 0.7502878308296204,
+      "mean": 0.6868943734169006,
+      "std": 0.08315727847423439
+    },
+    "status": "Verified Complete",
+    "notes": "Quantum-enhanced predictive RNN with 4-qubit VQC context modulator (10-epoch pilot run)"
   }
 ]

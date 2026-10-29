@@ -1,7 +1,9 @@
 display_name,architecture,run_id,checkpoint_epoch,checkpoint_sha256,test_mse,test_mae,test_psnr_db,test_ssim,latency_ms_per_window,evaluated_windows,status
-Persistence Baseline,Non-parametric (Repeat t=10),baseline_persistence,,N/A,0.00225968,0.01152133,27.3579,0.930371,14.89,100,Verified Complete
-Mean Context Baseline,Non-parametric (Temporal Mean),baseline_mean,,N/A,0.00190296,0.01316363,27.6477,0.918289,14.73,100,Verified Complete
-ConvLSTM — 10-Epoch Pilot,ConvLSTM (VideoConvLSTM),kth_classical_pilot_gpu,6,c216a746abee,0.01186681,0.09876526,19.4394,0.826118,44.84,100,Verified Complete
-PredRNN-V2 — 10-Epoch Run,PredRNN-V2 (Dual-Memory ST-LSTM),kth_predrnn_v2_overnight_gpu,10,922e43f095af,0.02754652,0.15844181,15.6,0.773247,75.37,100,Verified Complete
-QPredRNN — 10-Epoch Pilot,QPredRNN (Hybrid VQC + ST-LSTM),kth_qpredrnn_pilot_gpu,9,0e2174c5a212,0.02701043,0.15733236,15.7084,0.799899,298.94,100,Verified Complete
-QPredRNN — 50-Epoch Local Run,QPredRNN (Hybrid VQC + ST-LSTM),kth_qpredrnn_local_50ep,30,647244761c69,0.01409538,0.11022811,18.6565,0.819385,293.52,100,Verified Complete
+Persistence Baseline,Non-parametric (Repeat t=10),baseline_persistence,,N/A,0.00225968,0.01152133,27.3579,0.930371,13.36,100,Verified Complete
+Mean Context Baseline,Non-parametric (Temporal Mean),baseline_mean,,N/A,0.00190296,0.01316363,27.6477,0.918289,9.82,100,Verified Complete
+ConvLSTM — 50-Epoch TPU Run,ConvLSTM (VideoConvLSTM),kth_classical_tpu_50ep,19,f621494908f6,0.02129071,0.13818499,16.7629,0.790024,41.07,100,Verified Complete
+PredRNN-V2 — 50-Epoch Local Run,PredRNN-V2 (Dual-Memory ST-LSTM),kth_predrnn_v2_local_50ep,50,c0e78b704850,0.01553307,0.11426761,18.164,0.711932,78.81,100,Verified Complete
+QPredRNN — 50-Epoch Local Run,QPredRNN (Hybrid VQC + ST-LSTM),kth_qpredrnn_local_50ep,30,647244761c69,0.01409538,0.11022811,18.6565,0.819385,222.63,100,Verified Complete
+ConvLSTM — 10-Epoch Pilot,ConvLSTM (VideoConvLSTM),kth_classical_pilot_gpu,6,c216a746abee,0.01186681,0.09876526,19.4394,0.826118,37.81,100,Verified Complete
+PredRNN-V2 — 10-Epoch Overnight,PredRNN-V2 (Dual-Memory ST-LSTM),kth_predrnn_v2_overnight_gpu,10,922e43f095af,0.02754652,0.15844181,15.6,0.773247,78.42,100,Verified Complete
+QPredRNN — 10-Epoch Pilot,QPredRNN (Hybrid VQC + ST-LSTM),kth_qpredrnn_pilot_gpu,9,0e2174c5a212,0.02701043,0.15733236,15.7084,0.799899,219.41,100,Verified Complete
