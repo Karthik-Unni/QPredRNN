@@ -20,7 +20,7 @@ def compute_memory_decoupling_loss(
 
     total_decouple = torch.tensor(0.0, device=delta_c_list[0].device)
     count = 0
-
+    # looping through memory update
     for dc, dm in zip(delta_c_list, delta_m_list):
         # Flatten spatial and channel dimensions per batch item: (B, C * H * W)
         dc_flat = dc.reshape(dc.size(0), -1)
@@ -34,7 +34,8 @@ def compute_memory_decoupling_loss(
         total_decouple = total_decouple + cos_sim.mean()
         count += 1
 
-    return total_decouple / max(1, count)
+
+    return total_decouple / max(1, count) #average loss
 
 
 def reserve_schedule_sampling_exp(
