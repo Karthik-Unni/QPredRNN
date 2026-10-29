@@ -56,19 +56,27 @@ def main() -> None:
         {
             "name": "ConvLSTM (TPU 50ep)",
             "checkpoint": Path("runs/kth_classical_tpu_50ep/checkpoint_best.pt"),
-            "training_budget": "50 epochs (TPU v5e-1)",
+            "training_budget": "50 epochs (Google Cloud TPU v5e-1)",
             "architecture": "2-Layer Classical ConvLSTM Baseline",
         },
         {
-            "name": "PredRNN-V2 (TPU 50ep)",
-            "checkpoint": Path("runs/kth_predrnn_v2_tpu_50ep/checkpoint_best.pt"),
-            "training_budget": "50 epochs (TPU v5e-1)",
+            "name": "PredRNN-V2 (50ep)",
+            "checkpoint": Path("runs/kth_predrnn_v2_local_50ep/checkpoint_best.pt")
+            if Path("runs/kth_predrnn_v2_local_50ep/checkpoint_best.pt").exists()
+            else Path("runs/kth_predrnn_v2_tpu_50ep/checkpoint_best.pt"),
+            "training_budget": "50 epochs (Local GPU)"
+            if Path("runs/kth_predrnn_v2_local_50ep/checkpoint_best.pt").exists()
+            else "50 epochs (TPU v5e-1)",
             "architecture": "Classical Dual-Memory ST-LSTM + Decouple Loss + RSS",
         },
         {
-            "name": "QPredRNN (TPU 50ep)",
-            "checkpoint": Path("runs/kth_qpredrnn_tpu_50ep/checkpoint_best.pt"),
-            "training_budget": "50 epochs (TPU v5e-1)",
+            "name": "QPredRNN (50ep)",
+            "checkpoint": Path("runs/kth_qpredrnn_local_50ep/checkpoint_best.pt")
+            if Path("runs/kth_qpredrnn_local_50ep/checkpoint_best.pt").exists()
+            else Path("runs/kth_qpredrnn_tpu_50ep/checkpoint_best.pt"),
+            "training_budget": "50 epochs (Local GPU)"
+            if Path("runs/kth_qpredrnn_local_50ep/checkpoint_best.pt").exists()
+            else "50 epochs (TPU v5e-1)",
             "architecture": "4-qubit VQC + ST-LSTM + Decouple Loss + RSS",
         },
     ]

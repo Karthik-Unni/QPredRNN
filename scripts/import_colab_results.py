@@ -24,11 +24,74 @@ from typing import Any
 
 import yaml
 
-EXPECTED_RUN_DIRS = [
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+KNOWN_RUN_DIRS = [
     "kth_classical_tpu_50ep",
+    "kth_predrnn_v2_local_50ep",
+    "kth_qpredrnn_local_50ep",
     "kth_predrnn_v2_tpu_50ep",
     "kth_qpredrnn_tpu_50ep",
 ]
+EXPECTED_RUN_DIRS = KNOWN_RUN_DIRS  # Backward-compatible alias for existing tests
+
+
+def determine_hardware_provenance(run_name: str, config: dict | None = None, log_file: Path | None = None) -> str:
+    """Determine authentic hardware provenance from run name, config, and training logs.
+    
+    Ensures local GPU runs are never mislabeled as TPU runs.
+    """
+    name_lower = run_name.lower()
+
+    # 1. Inspect training log if available
+    if log_file and log_file.exists():
+        try:
+            log_text = log_file.read_text(encoding="utf-8", errors="ignore")
+            if "xla" in log_text.lower() or "tpu" in log_text.lower():
+                return "Google Cloud TPU v5e-1"
+            if "cuda" in log_text.lower() or "rtx" in log_text.lower() or "geforce" in log_text.lower():
+                return "Local GPU (NVIDIA CUDA)"
+        except Exception:
+            pass
+
+    # 2. Inspect config device
+    if config and "training" in config:
+        device_in_cfg = str(config["training"].get("device", "")).lower()
+        if "xla" in device_in_cfg or "tpu" in device_in_cfg:
+            return "Google Cloud TPU v5e-1"
+        if "cuda" in device_in_cfg:
+            return "Local GPU (NVIDIA CUDA)"
+
+    # 3. Inspect directory name convention
+    if "tpu" in name_lower:
+        return "Google Cloud TPU v5e-1"
+    if "local" in name_lower or "gpu" in name_lower:
+        return "Local GPU (NVIDIA CUDA)"
+    if "cpu" in name_lower:
+        return "Local CPU"
+
+    return "Local / External (Unspecified)"
+
+
+def discover_target_runs(source_dir: Path, requested_runs: list[str] | None = None) -> list[str]:
+    """Discover run directories to verify and import."""
+    if requested_runs:
+        return requested_runs
+
+    discovered: list[str] = []
+    if source_dir.exists():
+        for d in sorted(source_dir.iterdir()):
+            if d.is_dir() and not d.name.startswith("."):
+                if (d / "checkpoint_best.pt").exists() or d.name in KNOWN_RUN_DIRS or d.name.startswith("kth_"):
+                    discovered.append(d.name)
+
+    if discovered:
+        return discovered
+    return KNOWN_RUN_DIRS
 
 REQUIRED_ARTIFACT_NAMES = [
     "checkpoint_best.pt",
@@ -257,14 +320,16 @@ def import_colab_results(
     dest_dir: str | Path = "runs",
     dry_run: bool = False,
     overwrite: bool = False,
+    run_names: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Inspect and import Colab TPU run folders into local runs/ directory.
+    """Inspect and import training run folders (TPU and local GPU) into local runs/ directory.
 
     Args:
-        source_dir: Directory containing kth_*_tpu_50ep run folders.
+        source_dir: Directory containing kth_*_50ep run folders.
         dest_dir: Local destination directory (default: 'runs').
         dry_run: If True, inspect and verify without copying files.
         overwrite: If True, allow overwriting existing checkpoints.
+        run_names: Optional explicit list of run folder names to verify and import.
 
     Returns:
         Summary dict of verification and import results.
@@ -287,14 +352,16 @@ def import_colab_results(
         return report
 
     print("=" * 80)
-    print(f"COLAB TPU RESULTS IMPORT & VERIFICATION UTILITY")
+    print("QPredRNN TRAINING ARTIFACTS IMPORT & VERIFICATION UTILITY")
     print(f"Source: {src.resolve()}")
     print(f"Destination: {dst.resolve()}")
     print(f"Mode: {'DRY RUN (no files modified)' if dry_run else 'ACTIVE IMPORT'}")
     print(f"Overwrite policy: {'ALLOWED' if overwrite else 'REFUSE (preserve existing)'}")
     print("=" * 80)
 
-    for run_name in EXPECTED_RUN_DIRS:
+    target_runs = discover_target_runs(src, requested_runs=run_names)
+
+    for run_name in target_runs:
         run_src = src / run_name
         run_dst = dst / run_name
 
@@ -306,6 +373,7 @@ def import_colab_results(
             "best_checkpoint": None,
             "last_checkpoint": None,
             "consistency": None,
+            "hardware_provenance": "Unknown",
             "status": "MISSING",
         }
 
@@ -366,6 +434,12 @@ def import_colab_results(
 
         print(f"  ✅ checkpoint_best.pt: Epoch {best_meta['epoch']}, Step {best_meta['global_step']}, Val MSE {best_meta['val_loss']}")
         print(f"  ✅ checkpoint_last.pt: Epoch {last_meta['epoch']}, Step {last_meta['global_step']}")
+
+        # Hardware provenance verification
+        cfg_p, cfg_d = find_run_config(run_src, source_root=src)
+        provenance = determine_hardware_provenance(run_name, config=cfg_d, log_file=log_p)
+        run_report["hardware_provenance"] = provenance
+        print(f"  🖥️ Hardware Provenance: {provenance}")
 
         # Consistency verification
         consistency = verify_run_consistency(run_src, best_meta, last_meta, source_root=src)
@@ -439,9 +513,10 @@ def import_colab_results(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Import and verify Google Colab TPU training artifacts.")
-    parser.add_argument("--source-dir", required=True, help="Directory containing the completed Colab TPU run folders.")
+    parser = argparse.ArgumentParser(description="Import and verify Google Colab TPU and Local GPU training artifacts.")
+    parser.add_argument("--source-dir", required=True, help="Directory containing completed run folders.")
     parser.add_argument("--dest-dir", default="runs", help="Local destination runs/ directory (default: 'runs').")
+    parser.add_argument("--runs", nargs="+", default=None, help="Explicit list of run folder names to verify/import.")
     parser.add_argument("--dry-run", action="store_true", help="Perform verification without copying any files.")
     parser.add_argument("--overwrite", action="store_true", help="Allow overwriting existing destination checkpoints.")
     args = parser.parse_args()
@@ -451,6 +526,7 @@ def main() -> None:
         dest_dir=args.dest_dir,
         dry_run=args.dry_run,
         overwrite=args.overwrite,
+        run_names=args.runs,
     )
 
 
